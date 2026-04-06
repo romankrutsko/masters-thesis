@@ -7,7 +7,8 @@ from sklearn.linear_model import LassoCV
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import mean_squared_error
 
-Hitters = pd.read_csv('data/csv/Hitters.csv').drop('Unnamed: 0', axis=1).dropna()
+Hitters = pd.read_csv('data/csv/Hitters.csv').dropna()
+Hitters = Hitters.drop(columns=['rownames', 'Player', 'Name'], errors='ignore')
 Hitters['League'] = Hitters.League.map({'A':0, 'N':1})
 Hitters['NewLeague'] = Hitters.NewLeague.map({'A':0, 'N':1})
 Hitters['Division'] = Hitters.Division.map({'E':0, 'W':1})
@@ -24,7 +25,7 @@ for i in range(20):
     boost.fit(xtrain, ytrain)
     train_mse[i] = mean_squared_error(ytrain, boost.predict(xtrain))
 
-lasso = LassoCV(cv=10, normalize=True).fit(xtrain, ytrain)
+lasso = LassoCV(cv=10).fit(xtrain, ytrain)
 lasso_mse = mean_squared_error(ytest, lasso.predict(xtest))
 
 best_lambda = lambda_grid[train_mse.argmin()]
