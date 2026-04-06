@@ -1,34 +1,23 @@
-# Extracted from Ch06.R (Q9 ridge/lasso CV workflow)
+# Extracted from Ch09.R (Q7 SVM tuning workflow)
 
-library(glmnet)
+library(ISLR)
+library(e1071)
 
-College = read.csv("C:\\Users\\Carol\\Desktop\\College.csv", header=T)
-rownames(College) = College[,1]
-College = College[,-1]
+mpg01 = ifelse(Auto$mpg > median(Auto$mpg), 1, 0)
+df    = data.frame(x=Auto[,2:7], y=as.factor(mpg01))
 
-set.seed(1)
-train    = sample(1:nrow(College), nrow(College)/2)
-test     = (-train)
-df.train = College[train,]
-df.test  = College[test,]
-
-x.train = model.matrix(Apps~., df.train)[,-1]
-y.train = df.train$Apps
-x.test  = model.matrix(Apps~., df.test)[,-1]
-y.test  = df.test$Apps
+ctry = c(0.01, 0.1, 1, 10, 100, 1000)
 
 set.seed(1)
-cv.out  = cv.glmnet(x.train, y.train, alpha=0)
-plot(cv.out)
-bestlam = cv.out$lambda.min
+tune.out1 = tune(svm, y~., data=df, kernel='linear', ranges=list(cost=ctry))
+summary(tune.out1)
 
-ridge.pred = predict(cv.out, s=bestlam, newx=x.test)
-ridge.err  = mean((ridge.pred-y.test)^2)
-
+polytry = c(2, 3, 4, 5)
 set.seed(1)
-cv.out  = cv.glmnet(x.train, y.train, alpha=1)
-plot(cv.out)
-bestlam = cv.out$lambda.min
+tune.out2 = tune(svm, y~., data=df, kernel='polynomial', ranges=list(cost=ctry, degree=polytry))
+summary(tune.out2)
 
-lasso.pred = predict(cv.out, s=bestlam, newx=x.test)
-lasso.err  = mean((lasso.pred-y.test)^2)
+gammatry = c(0.5, 1, 2, 3)
+set.seed(1)
+tune.out3 = tune(svm, y~., data=df, kernel='radial', ranges=list(cost=ctry, gamma=gammatry))
+summary(tune.out3)

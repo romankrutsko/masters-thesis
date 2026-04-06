@@ -1,34 +1,31 @@
-# Extracted from Ch08.py (Q8 decision tree workflow + CV)
+# Extracted from Ch09.py (Q7 SVM + GridSearchCV workflow)
 
+import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import GridSearchCV
+from sklearn.svm import SVC
 
-Carseats = pd.read_csv('C:\\Users\\Carol\\Desktop\\Carseats.csv')
-Carseats['Urban']     = Carseats.Urban.map({'No':0, 'Yes':1})
-Carseats['US']        = Carseats.US.map({'No':0, 'Yes':1})
-Carseats['ShelveLoc'] = pd.factorize(Carseats.ShelveLoc)[0]
-Carseats              = Carseats.drop('Unnamed: 0', axis=1)
+Auto = pd.read_csv('C:\\Users\\Carol\\Desktop\\Auto.csv', na_values='?').dropna()
+Auto['mpg01'] = np.where(Auto['mpg'] > np.median(Auto['mpg']), 1, 0)
+Auto = Auto.drop(['mpg', 'name'], axis=1)
 
-x = Carseats.drop(['Sales'], axis=1)
-y = Carseats['Sales']
-xtrain, xtest, ytrain, ytest = train_test_split(x, y, train_size=0.5, random_state=1)
+var_no_scale = ['cylinders', 'year', 'origin', 'mpg01']
+var_to_scale = ['displacement', 'horsepower', 'weight', 'acceleration']
+scaled_var = StandardScaler().fit_transform(Auto[var_to_scale])
+df = pd.concat([
+    pd.DataFrame(scaled_var, columns=var_to_scale),
+    Auto[var_no_scale].reset_index(drop=True)
+], axis=1)
 
-tree_carseats = DecisionTreeRegressor()
-tree_carseats.fit(xtrain, ytrain)
-ypred = tree_carseats.predict(xtest)
-mean_squared_error(ytest, ypred)
+x = df.iloc[:, :-1]
+y = df['mpg01']
 
-depth = []
-for i in range(1,11):
-    cv_tree = DecisionTreeRegressor(max_depth=i)
-    scores  = cross_val_score(estimator=cv_tree, X=xtrain, y=ytrain, cv=10)
-    depth.append(scores.mean())
-plt.plot(range(1,11), depth)
+tune_param = [{'C': [0.01, 0.1, 1, 10, 100, 1000]}]
+GridSearchCV(SVC(kernel='linear'), tune_param, cv=5, scoring='accuracy', n_jobs=-1).fit(x, y)
 
-pruned_tree_carseats = DecisionTreeRegressor(max_depth=depth.index(max(depth))+1)
-pruned_tree_carseats.fit(xtrain, ytrain)
-ypred = pruned_tree_carseats.predict(xtest)
-mean_squared_error(ytest, ypred)
+tune_param = [{'C': [0.01, 0.1, 1, 10, 100, 1000], 'degree': [2, 3, 4, 5]}]
+GridSearchCV(SVC(kernel='poly'), tune_param, cv=5, scoring='accuracy', n_jobs=-1).fit(x, y)
+
+tune_param = [{'C': [0.01, 0.1, 1, 10, 100, 1000], 'gamma': [0.5, 1, 2, 3]}]
+GridSearchCV(SVC(kernel='rbf'), tune_param, cv=5, scoring='accuracy', n_jobs=-1).fit(x, y)
