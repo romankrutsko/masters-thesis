@@ -1,6 +1,6 @@
 # Extracted from Ch02.R (Q8 visualization)
 
-college = read.csv('C:\\Users\\Carol\\Desktop\\College.csv', header=TRUE)
+college = read.csv('data/csv/College.csv', header=TRUE)
 rownames(college) = college[,1]
 college = college[,-1]
 

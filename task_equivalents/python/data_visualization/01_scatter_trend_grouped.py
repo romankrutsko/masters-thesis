@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
 
-Auto = pd.read_csv('C:\\Users\\Carol\\Desktop\\Auto.csv', na_values='?').dropna()
+Auto = pd.read_csv('data/csv/Auto.csv', na_values='?').dropna()
 
 n = len(Auto['mpg'])
 X = np.reshape(Auto['horsepower'], (n, 1))

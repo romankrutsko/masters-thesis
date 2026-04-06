@@ -5,7 +5,7 @@ import pandas as pd
 import statsmodels.api as sm
 from sklearn.metrics import confusion_matrix
 
-Weekly = pd.read_csv('C:\\Users\\Carol\\Desktop\\Weekly.csv')
+Weekly = pd.read_csv('data/csv/Weekly.csv')
 
 x01 = sm.add_constant(Weekly.iloc[:, 2:8])
 y01 = np.where(Weekly['Direction'] == 'Up', 1, 0)

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-College = pd.read_csv('C:\\Users\\Carol\\Desktop\\college.csv')
+College = pd.read_csv('data/csv/College.csv')
 school_name = College.iloc[:, 0]
 College = College.rename(index=lambda i: school_name[i])
 College.drop(College.columns[[0]], axis=1, inplace=True)

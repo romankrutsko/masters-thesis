@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-college = pd.read_csv('C:\\Users\\Carol\\Desktop\\college.csv')
+college = pd.read_csv('data/csv/College.csv')
 school_name = college.iloc[:, 0]
 college = college.rename(index=lambda i: school_name[i])
 college.drop(college.columns[[0]], axis=1, inplace=True)

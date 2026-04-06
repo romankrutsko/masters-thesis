@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-Auto = pd.read_csv('C:\\Users\\Carol\\Desktop\\Auto.csv', na_values='?').dropna()
+Auto = pd.read_csv('data/csv/Auto.csv', na_values='?').dropna()
 
 Auto['mpg01'] = np.where(Auto['mpg'] > np.median(Auto['mpg']), 1, 0)
 Auto = Auto.drop(['mpg', 'name'], axis=1)

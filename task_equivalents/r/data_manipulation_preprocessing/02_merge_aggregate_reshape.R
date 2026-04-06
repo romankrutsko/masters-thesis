@@ -1,6 +1,6 @@
 # Extracted from Ch06.R (Q9 preprocessing/model matrix)
 
-College = read.csv('C:\\Users\\Carol\\Desktop\\College.csv', header=TRUE)
+College = read.csv('data/csv/College.csv', header=TRUE)
 rownames(College) = College[,1]
 College = College[,-1]
 

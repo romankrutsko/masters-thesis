@@ -1,6 +1,6 @@
 # Extracted from Ch03.R (Q8 visualization)
 
-auto = read.csv('C:\\Users\\Carol\\Desktop\\Auto.csv', header=TRUE, na.strings='?')
+auto = read.csv('data/csv/Auto.csv', header=TRUE, na.strings='?')
 auto = na.omit(auto)
 model1 = lm(mpg~horsepower, data=auto)
 

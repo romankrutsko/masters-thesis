@@ -7,7 +7,7 @@ from sklearn.linear_model import LassoCV
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import mean_squared_error
 
-Hitters = pd.read_csv('C:\\Users\\Carol\\Desktop\\Hitters.csv').drop('Unnamed: 0', axis=1).dropna()
+Hitters = pd.read_csv('data/csv/Hitters.csv').drop('Unnamed: 0', axis=1).dropna()
 Hitters['League'] = Hitters.League.map({'A':0, 'N':1})
 Hitters['NewLeague'] = Hitters.NewLeague.map({'A':0, 'N':1})
 Hitters['Division'] = Hitters.Division.map({'E':0, 'W':1})
