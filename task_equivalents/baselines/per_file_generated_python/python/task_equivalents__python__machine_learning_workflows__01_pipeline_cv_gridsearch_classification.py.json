@@ -1,0 +1,175 @@
+{
+  "meta": {
+    "language": "python",
+    "path": "task_equivalents/python/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.py",
+    "generated_at_utc": "2026-04-07T09:03:16.417583+00:00"
+  },
+  "entry": {
+    "language": "python",
+    "path": "task_equivalents/python/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.py",
+    "script_sha256": "60376f44ef42a59689190cc324c352efe290066354e50c1f7789e48b28f3e167",
+    "exit_code": 0,
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "status": "ok",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "var_summary": {
+      "Auto": {
+        "type": "DataFrame",
+        "shape": [
+          392,
+          9
+        ],
+        "columns": [
+          "rownames",
+          "cylinders",
+          "displacement",
+          "horsepower",
+          "weight",
+          "acceleration",
+          "year",
+          "origin",
+          "mpg01"
+        ],
+        "na_total": 0,
+        "numeric_means": {
+          "rownames": 198.520408,
+          "cylinders": 5.471939,
+          "displacement": 194.41199,
+          "horsepower": 104.469388,
+          "weight": 2977.584184,
+          "acceleration": 15.541327,
+          "year": 75.979592,
+          "origin": 1.576531,
+          "mpg01": 0.5
+        },
+        "numeric_sds": {
+          "rownames": 114.438067,
+          "cylinders": 1.705783,
+          "displacement": 104.644004,
+          "horsepower": 38.49116,
+          "weight": 849.40256,
+          "acceleration": 2.758864,
+          "year": 3.683737,
+          "origin": 0.805518,
+          "mpg01": 0.500639
+        }
+      },
+      "df": {
+        "type": "DataFrame",
+        "shape": [
+          392,
+          8
+        ],
+        "columns": [
+          "displacement",
+          "horsepower",
+          "weight",
+          "acceleration",
+          "cylinders",
+          "year",
+          "origin",
+          "mpg01"
+        ],
+        "na_total": 0,
+        "numeric_means": {
+          "displacement": -0.0,
+          "horsepower": -0.0,
+          "weight": -0.0,
+          "acceleration": 0.0,
+          "cylinders": 5.471939,
+          "year": 75.979592,
+          "origin": 1.576531,
+          "mpg01": 0.5
+        },
+        "numeric_sds": {
+          "displacement": 1.001278,
+          "horsepower": 1.001278,
+          "weight": 1.001278,
+          "acceleration": 1.001278,
+          "cylinders": 1.705783,
+          "year": 3.683737,
+          "origin": 0.805518,
+          "mpg01": 0.500639
+        }
+      },
+      "scaled_var": {
+        "type": "ndarray",
+        "shape": [
+          392,
+          4
+        ],
+        "dtype": "float64",
+        "mean": 0.0,
+        "std": 1.000319,
+        "sum": 0.0,
+        "min": -2.736983,
+        "max": 3.360262
+      },
+      "tune_param": {
+        "type": "list",
+        "length": 1
+      },
+      "var_no_scale": {
+        "type": "list",
+        "length": 4
+      },
+      "var_to_scale": {
+        "type": "list",
+        "length": 4
+      },
+      "x": {
+        "type": "DataFrame",
+        "shape": [
+          392,
+          7
+        ],
+        "columns": [
+          "displacement",
+          "horsepower",
+          "weight",
+          "acceleration",
+          "cylinders",
+          "year",
+          "origin"
+        ],
+        "na_total": 0,
+        "numeric_means": {
+          "displacement": -0.0,
+          "horsepower": -0.0,
+          "weight": -0.0,
+          "acceleration": 0.0,
+          "cylinders": 5.471939,
+          "year": 75.979592,
+          "origin": 1.576531
+        },
+        "numeric_sds": {
+          "displacement": 1.001278,
+          "horsepower": 1.001278,
+          "weight": 1.001278,
+          "acceleration": 1.001278,
+          "cylinders": 1.705783,
+          "year": 3.683737,
+          "origin": 0.805518
+        }
+      },
+      "y": {
+        "type": "Series",
+        "name": "mpg01",
+        "length": 392,
+        "dtype": "int64",
+        "na_total": 0,
+        "unique_count": 2,
+        "sum": 196,
+        "mean": 0.5,
+        "std": 0.500639,
+        "unique_values_head": [
+          0,
+          1
+        ]
+      }
+    },
+    "var_summary_sha256": "d84663d984ac59e42315583a9d28df3b970ef5ca1028880715cc3b0abc96eef8"
+  }
+}

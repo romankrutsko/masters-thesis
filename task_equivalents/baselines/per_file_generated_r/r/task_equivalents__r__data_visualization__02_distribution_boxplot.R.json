@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "language": "r",
+    "path": "task_equivalents/r/data_visualization/02_distribution_boxplot.R",
+    "generated_at_utc": "2026-04-07T09:15:59.565270+00:00"
+  },
+  "entry": {
+    "language": "r",
+    "path": "task_equivalents/r/data_visualization/02_distribution_boxplot.R",
+    "script_sha256": "7aed193a2f5f4453096f6d81d9a3300f1cd9245db5b9f18d1be024576746ffcc",
+    "exit_code": 0,
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "status": "ok",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "var_summary": {
+      "captured": {
+        "type": "character",
+        "length": 0,
+        "unique_count": 0
+      },
+      "college": {
+        "type": "data.frame",
+        "nrow": 777,
+        "ncol": 19,
+        "colnames": [
+          "Private",
+          "Apps",
+          "Accept",
+          "Enroll",
+          "Top10perc",
+          "Top25perc",
+          "F.Undergrad",
+          "P.Undergrad",
+          "Outstate",
+          "Room.Board",
+          "Books",
+          "Personal",
+          "PhD",
+          "Terminal",
+          "S.F.Ratio",
+          "perc.alumni",
+          "Expend",
+          "Grad.Rate",
+          "Elite"
+        ],
+        "na_total": 0,
+        "numeric_means": {
+          "Apps": 3001.6384,
+          "Accept": 2018.8044,
+          "Enroll": 779.973,
+          "Top10perc": 27.5586,
+          "Top25perc": 55.7967,
+          "F.Undergrad": 3699.9073,
+          "P.Undergrad": 855.2986,
+          "Outstate": 10440.6692,
+          "Room.Board": 4357.5264,
+          "Books": 549.381,
+          "Personal": 1340.6422,
+          "PhD": 72.6602,
+          "Terminal": 79.7027,
+          "S.F.Ratio": 14.0897,
+          "perc.alumni": 22.7439,
+          "Expend": 9660.1712,
+          "Grad.Rate": 65.4633
+        },
+        "numeric_sds": {
+          "Apps": 3870.2015,
+          "Accept": 2451.114,
+          "Enroll": 929.1762,
+          "Top10perc": 17.6404,
+          "Top25perc": 19.8048,
+          "F.Undergrad": 4850.4205,
+          "P.Undergrad": 1522.4319,
+          "Outstate": 4023.0165,
+          "Room.Board": 1096.6964,
+          "Books": 165.1054,
+          "Personal": 677.0715,
+          "PhD": 16.3282,
+          "Terminal": 14.7224,
+          "S.F.Ratio": 3.9583,
+          "perc.alumni": 12.3918,
+          "Expend": 5221.7684,
+          "Grad.Rate": 17.1777
+        }
+      },
+      "Elite": {
+        "type": "factor",
+        "length": 777,
+        "levels": [
+          "No",
+          "Yes"
+        ],
+        "counts": [
+          699,
+          78
+        ]
+      },
+      "script_path": {
+        "type": "character",
+        "length": 1,
+        "unique_count": 1
+      }
+    },
+    "var_summary_sha256": "8864b3f5f1029dafc841e795fce00910a3278b370738fd37d5c3a366c142499a"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "language": "r",
+    "path": "task_equivalents/r/statistical_modelling_analysis/02_logistic_regression_odds_ratios.R",
+    "generated_at_utc": "2026-04-07T09:15:59.565270+00:00"
+  },
+  "entry": {
+    "language": "r",
+    "path": "task_equivalents/r/statistical_modelling_analysis/02_logistic_regression_odds_ratios.R",
+    "script_sha256": "3a903925150cb17752ded9a2ef61684786a7ba930bef14c8656c8182aa520e76",
+    "exit_code": 0,
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "status": "ok",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "var_summary": {
+      "captured": {
+        "type": "character",
+        "length": 0,
+        "unique_count": 0
+      },
+      "glm1.fit": {
+        "type": "glm",
+        "coef": [
+          0.2669,
+          -0.0413,
+          0.0584,
+          -0.0161,
+          -0.0278,
+          -0.0145,
+          -0.0227
+        ]
+      },
+      "glm1.pred": {
+        "type": "character",
+        "length": 1089,
+        "unique_count": 2
+      },
+      "glm1.prob": {
+        "type": "numeric",
+        "length": 1089,
+        "na_total": 0,
+        "mean": 0.5556,
+        "sd": 0.047,
+        "sum": 605,
+        "min": 0.2864,
+        "max": 0.7837
+      },
+      "n": {
+        "type": "numeric",
+        "length": 1,
+        "na_total": 0,
+        "mean": 1089,
+        "sd": null,
+        "sum": 1089,
+        "min": 1089,
+        "max": 1089
+      },
+      "script_path": {
+        "type": "character",
+        "length": 1,
+        "unique_count": 1
+      }
+    },
+    "var_summary_sha256": "c925e0473feb12d2d4f263aa525423fa7a1e1d2e27863b42ca7135e7661b175c"
+  }
+}

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import base64
 import hashlib
 import json
 import os
@@ -265,11 +264,13 @@ print(json.dumps(sanitize(result)))
 
 
 def run_r_baseline(script_path: Path, rscript_bin: str) -> dict:
-    # We keep R summary as DPUT text so no extra R package is required.
     escaped_path = str(script_path).replace("'", "\\'")
     wrapper = f"""
 options(stringsAsFactors = FALSE)
 options(device = function(...) pdf(file = tempfile(fileext = '.pdf')))
+if (!requireNamespace("jsonlite", quietly = TRUE)) {{
+  stop("Package 'jsonlite' is required for JSON baseline output. Install via install.packages('jsonlite').")
+}}
 
 summarize_obj <- function(x) {{
   cls <- class(x)[1]
@@ -366,9 +367,9 @@ for (nm in objs) {{
 cat('---SCRIPT_OUTPUT_START---\\n')
 if (length(captured) > 0) cat(paste(captured, collapse='\\n'))
 cat('\\n---SCRIPT_OUTPUT_END---\\n')
-cat('---SUMMARY_DPUT_START---\\n')
-dput(out)
-cat('\\n---SUMMARY_DPUT_END---\\n')
+cat('---SUMMARY_JSON_START---\\n')
+jsonlite::write_json(out, path = stdout(), auto_unbox = TRUE, na = "null")
+cat('\\n---SUMMARY_JSON_END---\\n')
 """
 
     with tempfile.NamedTemporaryFile("w", suffix=".R", delete=False) as f:
@@ -406,8 +407,8 @@ cat('\\n---SUMMARY_DPUT_END---\\n')
     try:
         s1 = text.index("---SCRIPT_OUTPUT_START---") + len("---SCRIPT_OUTPUT_START---")
         e1 = text.index("---SCRIPT_OUTPUT_END---")
-        s2 = text.index("---SUMMARY_DPUT_START---") + len("---SUMMARY_DPUT_START---")
-        e2 = text.index("---SUMMARY_DPUT_END---")
+        s2 = text.index("---SUMMARY_JSON_START---") + len("---SUMMARY_JSON_START---")
+        e2 = text.index("---SUMMARY_JSON_END---")
     except ValueError:
         base["status"] = "error"
         base["error"] = "could not parse R wrapper markers"
@@ -416,13 +417,21 @@ cat('\\n---SUMMARY_DPUT_END---\\n')
         return base
 
     script_stdout = text[s1:e1].strip("\n")
-    summary_dput = text[s2:e2].strip("\n")
+    summary_json = text[s2:e2].strip("\n")
+    try:
+        var_summary = json.loads(summary_json)
+    except Exception as e:
+        base["status"] = "error"
+        base["error"] = f"failed to parse R summary JSON: {e}"
+        base["stdout"] = short_text(script_stdout)
+        base["stdout_sha256"] = sha256_text(script_stdout)
+        return base
 
     base["status"] = "ok"
     base["stdout"] = short_text(script_stdout)
     base["stdout_sha256"] = sha256_text(script_stdout)
-    base["summary_dput_b64"] = base64.b64encode(summary_dput.encode("utf-8")).decode("ascii")
-    base["summary_dput_sha256"] = sha256_text(summary_dput)
+    base["var_summary"] = var_summary
+    base["var_summary_sha256"] = sha256_text(json.dumps(var_summary, sort_keys=True))
     return base
 
 

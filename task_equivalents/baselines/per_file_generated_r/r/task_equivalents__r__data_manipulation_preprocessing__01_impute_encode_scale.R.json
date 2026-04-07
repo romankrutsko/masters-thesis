@@ -1,0 +1,121 @@
+{
+  "meta": {
+    "language": "r",
+    "path": "task_equivalents/r/data_manipulation_preprocessing/01_impute_encode_scale.R",
+    "generated_at_utc": "2026-04-07T09:15:59.565270+00:00"
+  },
+  "entry": {
+    "language": "r",
+    "path": "task_equivalents/r/data_manipulation_preprocessing/01_impute_encode_scale.R",
+    "script_sha256": "18d8e53ab348851ecf9443f8d0412784a267deadb998dbf8e76141079cd5abd4",
+    "exit_code": 0,
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "status": "ok",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "var_summary": {
+      "captured": {
+        "type": "character",
+        "length": 0,
+        "unique_count": 0
+      },
+      "df": {
+        "type": "data.frame",
+        "nrow": 392,
+        "ncol": 7,
+        "colnames": [
+          "cylinders",
+          "displacement",
+          "horsepower",
+          "weight",
+          "acceleration",
+          "year",
+          "mpg01"
+        ],
+        "na_total": 0,
+        "numeric_means": {
+          "cylinders": 5.4719,
+          "displacement": 0,
+          "horsepower": 0,
+          "weight": 0,
+          "acceleration": 0,
+          "year": 75.9796,
+          "mpg01": 0.5
+        },
+        "numeric_sds": {
+          "cylinders": 1.7058,
+          "displacement": 1,
+          "horsepower": 1,
+          "weight": 1,
+          "acceleration": 1,
+          "year": 3.6837,
+          "mpg01": 0.5006
+        }
+      },
+      "mpg01": {
+        "type": "numeric",
+        "length": 392,
+        "na_total": 0,
+        "mean": 0.5,
+        "sd": 0.5006,
+        "sum": 196,
+        "min": 0,
+        "max": 1
+      },
+      "script_path": {
+        "type": "character",
+        "length": 1,
+        "unique_count": 1
+      },
+      "var_to_scale": {
+        "type": "character",
+        "length": 4,
+        "unique_count": 4
+      },
+      "x": {
+        "type": "data.frame",
+        "nrow": 392,
+        "ncol": 6,
+        "colnames": [
+          "cylinders",
+          "displacement",
+          "horsepower",
+          "weight",
+          "acceleration",
+          "year"
+        ],
+        "na_total": 0,
+        "numeric_means": {
+          "cylinders": 5.4719,
+          "displacement": 0,
+          "horsepower": 0,
+          "weight": 0,
+          "acceleration": 0,
+          "year": 75.9796
+        },
+        "numeric_sds": {
+          "cylinders": 1.7058,
+          "displacement": 1,
+          "horsepower": 1,
+          "weight": 1,
+          "acceleration": 1,
+          "year": 3.6837
+        }
+      },
+      "y": {
+        "type": "factor",
+        "length": 392,
+        "levels": [
+          "0",
+          "1"
+        ],
+        "counts": [
+          196,
+          196
+        ]
+      }
+    },
+    "var_summary_sha256": "ad958f372d59bd4dafe4b154a459c32d97bc49acb22d691be8850246c19c57fb"
+  }
+}

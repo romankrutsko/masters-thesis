@@ -1,0 +1,56 @@
+{
+  "generated_at_utc": "2026-04-07T09:03:16.417583+00:00",
+  "repo_root": "/Users/romankrutsko/PycharmProjects/MastersThesis",
+  "python_bin": "/Users/romankrutsko/PycharmProjects/MastersThesis/.venv/bin/python3",
+  "rscript_bin": "Rscript",
+  "files": [
+    {
+      "language": "python",
+      "path": "task_equivalents/python/data_manipulation_preprocessing/01_impute_encode_scale.py",
+      "file": "python/task_equivalents__python__data_manipulation_preprocessing__01_impute_encode_scale.py.json",
+      "status": "ok"
+    },
+    {
+      "language": "python",
+      "path": "task_equivalents/python/data_manipulation_preprocessing/02_merge_aggregate_reshape.py",
+      "file": "python/task_equivalents__python__data_manipulation_preprocessing__02_merge_aggregate_reshape.py.json",
+      "status": "ok"
+    },
+    {
+      "language": "python",
+      "path": "task_equivalents/python/data_visualization/01_scatter_trend_grouped.py",
+      "file": "python/task_equivalents__python__data_visualization__01_scatter_trend_grouped.py.json",
+      "status": "ok"
+    },
+    {
+      "language": "python",
+      "path": "task_equivalents/python/data_visualization/02_distribution_boxplot.py",
+      "file": "python/task_equivalents__python__data_visualization__02_distribution_boxplot.py.json",
+      "status": "ok"
+    },
+    {
+      "language": "python",
+      "path": "task_equivalents/python/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.py",
+      "file": "python/task_equivalents__python__machine_learning_workflows__01_pipeline_cv_gridsearch_classification.py.json",
+      "status": "ok"
+    },
+    {
+      "language": "python",
+      "path": "task_equivalents/python/machine_learning_workflows/02_regression_workflow_feature_importance.py",
+      "file": "python/task_equivalents__python__machine_learning_workflows__02_regression_workflow_feature_importance.py.json",
+      "status": "ok"
+    },
+    {
+      "language": "python",
+      "path": "task_equivalents/python/statistical_modelling_analysis/01_linear_regression_inference.py",
+      "file": "python/task_equivalents__python__statistical_modelling_analysis__01_linear_regression_inference.py.json",
+      "status": "ok"
+    },
+    {
+      "language": "python",
+      "path": "task_equivalents/python/statistical_modelling_analysis/02_logistic_regression_odds_ratios.py",
+      "file": "python/task_equivalents__python__statistical_modelling_analysis__02_logistic_regression_odds_ratios.py.json",
+      "status": "ok"
+    }
+  ]
+}

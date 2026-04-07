@@ -1,0 +1,125 @@
+{
+  "meta": {
+    "language": "r",
+    "path": "task_equivalents/r/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.R",
+    "generated_at_utc": "2026-04-07T09:15:59.565270+00:00"
+  },
+  "entry": {
+    "language": "r",
+    "path": "task_equivalents/r/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.R",
+    "script_sha256": "d9432384167a65bccac5bb8afd7c9329fa52d3a70ced75072c1a779981761e03",
+    "exit_code": 0,
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "status": "ok",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "var_summary": {
+      "captured": {
+        "type": "character",
+        "length": 0,
+        "unique_count": 0
+      },
+      "ctry": {
+        "type": "numeric",
+        "length": 6,
+        "na_total": 0,
+        "mean": 185.185,
+        "sd": 401.0836,
+        "sum": 1111.11,
+        "min": 0.01,
+        "max": 1000
+      },
+      "df": {
+        "type": "data.frame",
+        "nrow": 392,
+        "ncol": 7,
+        "colnames": [
+          "x.cylinders",
+          "x.displacement",
+          "x.horsepower",
+          "x.weight",
+          "x.acceleration",
+          "x.year",
+          "y"
+        ],
+        "na_total": 0,
+        "numeric_means": {
+          "x.cylinders": 5.4719,
+          "x.displacement": 194.412,
+          "x.horsepower": 104.4694,
+          "x.weight": 2977.5842,
+          "x.acceleration": 15.5413,
+          "x.year": 75.9796
+        },
+        "numeric_sds": {
+          "x.cylinders": 1.7058,
+          "x.displacement": 104.644,
+          "x.horsepower": 38.4912,
+          "x.weight": 849.4026,
+          "x.acceleration": 2.7589,
+          "x.year": 3.6837
+        }
+      },
+      "gammatry": {
+        "type": "numeric",
+        "length": 4,
+        "na_total": 0,
+        "mean": 1.625,
+        "sd": 1.1087,
+        "sum": 6.5,
+        "min": 0.5,
+        "max": 3
+      },
+      "mpg01": {
+        "type": "numeric",
+        "length": 392,
+        "na_total": 0,
+        "mean": 0.5,
+        "sd": 0.5006,
+        "sum": 196,
+        "min": 0,
+        "max": 1
+      },
+      "polytry": {
+        "type": "numeric",
+        "length": 4,
+        "na_total": 0,
+        "mean": 3.5,
+        "sd": 1.291,
+        "sum": 14,
+        "min": 2,
+        "max": 5
+      },
+      "script_path": {
+        "type": "character",
+        "length": 1,
+        "unique_count": 1
+      },
+      "tune.out1": {
+        "type": "tune",
+        "best_parameters": {
+          "cost": 100
+        },
+        "best_performance": 0.0818
+      },
+      "tune.out2": {
+        "type": "tune",
+        "best_parameters": {
+          "cost": 10,
+          "degree": 3
+        },
+        "best_performance": 0.0791
+      },
+      "tune.out3": {
+        "type": "tune",
+        "best_parameters": {
+          "cost": 100,
+          "gamma": 2
+        },
+        "best_performance": 0.0637
+      }
+    },
+    "var_summary_sha256": "579caf66fd72f2fb5b9a8f963e29ff59985fd8d75314cb4456b4f3c1b2cbc914"
+  }
+}

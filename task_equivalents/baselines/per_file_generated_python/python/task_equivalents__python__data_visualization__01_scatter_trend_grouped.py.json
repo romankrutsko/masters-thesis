@@ -1,0 +1,115 @@
+{
+  "meta": {
+    "language": "python",
+    "path": "task_equivalents/python/data_visualization/01_scatter_trend_grouped.py",
+    "generated_at_utc": "2026-04-07T09:03:16.417583+00:00"
+  },
+  "entry": {
+    "language": "python",
+    "path": "task_equivalents/python/data_visualization/01_scatter_trend_grouped.py",
+    "script_sha256": "448db18c6d9c41d5c77d1fe48b66d29516c73b073122796e98c22145e4fa50a3",
+    "exit_code": 0,
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "status": "ok",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "var_summary": {
+      "Auto": {
+        "type": "DataFrame",
+        "shape": [
+          392,
+          10
+        ],
+        "columns": [
+          "rownames",
+          "mpg",
+          "cylinders",
+          "displacement",
+          "horsepower",
+          "weight",
+          "acceleration",
+          "year",
+          "origin",
+          "name"
+        ],
+        "na_total": 0,
+        "numeric_means": {
+          "rownames": 198.520408,
+          "mpg": 23.445918,
+          "cylinders": 5.471939,
+          "displacement": 194.41199,
+          "horsepower": 104.469388,
+          "weight": 2977.584184,
+          "acceleration": 15.541327,
+          "year": 75.979592,
+          "origin": 1.576531
+        },
+        "numeric_sds": {
+          "rownames": 114.438067,
+          "mpg": 7.805007,
+          "cylinders": 1.705783,
+          "displacement": 104.644004,
+          "horsepower": 38.49116,
+          "weight": 849.40256,
+          "acceleration": 2.758864,
+          "year": 3.683737,
+          "origin": 0.805518
+        }
+      },
+      "X": {
+        "type": "ndarray",
+        "shape": [
+          392,
+          2
+        ],
+        "dtype": "float64",
+        "mean": 52.734694,
+        "std": 58.478504,
+        "sum": 41344.0,
+        "min": 1.0,
+        "max": 230.0
+      },
+      "Y": {
+        "type": "ndarray",
+        "shape": [
+          392,
+          1
+        ],
+        "dtype": "float64",
+        "mean": 23.445918,
+        "std": 7.805007,
+        "sum": 9190.8,
+        "min": 9.0,
+        "max": 46.6
+      },
+      "a": {
+        "type": "scalar",
+        "value": 39.935861
+      },
+      "b": {
+        "type": "scalar",
+        "value": -0.157845
+      },
+      "model1_fit": {
+        "type": "RegressionResultsWrapper",
+        "params": [
+          39.935861,
+          -0.157845
+        ]
+      },
+      "n": {
+        "type": "scalar",
+        "value": null
+      },
+      "yfit": {
+        "type": "list",
+        "length": 392,
+        "mean": 23.445918,
+        "std": 6.075627,
+        "sum": 9190.8
+      }
+    },
+    "var_summary_sha256": "41171ad2f6bf93d29f28fbbc6068cdcc9e174ea9761d27919517dd2bfe649434"
+  }
+}

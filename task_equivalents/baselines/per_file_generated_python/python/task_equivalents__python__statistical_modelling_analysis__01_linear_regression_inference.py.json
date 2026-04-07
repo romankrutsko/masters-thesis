@@ -1,0 +1,113 @@
+{
+  "meta": {
+    "language": "python",
+    "path": "task_equivalents/python/statistical_modelling_analysis/01_linear_regression_inference.py",
+    "generated_at_utc": "2026-04-07T09:03:16.417583+00:00"
+  },
+  "entry": {
+    "language": "python",
+    "path": "task_equivalents/python/statistical_modelling_analysis/01_linear_regression_inference.py",
+    "script_sha256": "3a024fa035027579d53f9dc5839074731a90e1b918cf8f0c3ca94a5b4e06bb7d",
+    "exit_code": 0,
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "status": "ok",
+    "stdout": "                            OLS Regression Results                            \n==============================================================================\nDep. Variable:                      y   R-squared:                       0.606\nModel:                            OLS   Adj. R-squared:                  0.605\nMethod:                 Least Squares   F-statistic:                     599.7\nDate:                Tue, 07 Apr 2026   Prob (F-statistic):           7.03e-81\nTime:                        12:04:08   Log-Likelihood:                -1178.7\nNo. Observations:                 392   AIC:                             2361.\nDf Residuals:                     390   BIC:                             2369.\nDf Model:                           1                                         \nCovariance Type:            nonrobust                                         \n==============================================================================\n                 coef    std err          t      P>|t|      [0.025      0.975]\n------------------------------------------------------------------------------\nconst         39.9359      0.717     55.660      0.000      38.525      41.347\nx1            -0.1578      0.006    -24.489      0.000      -0.171      -0.145\n==============================================================================\nOmnibus:                       16.432   Durbin-Watson:                   0.920\nProb(Omnibus):                  0.000   Jarque-Bera (JB):               17.305\nSkew:                           0.492   Prob(JB):                     0.000175\nKurtosis:                       3.299   Cond. No.                         322.\n==============================================================================\n\nNotes:\n[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.\n        mean   mean_se  ...  obs_ci_lower  obs_ci_upper\n0  24.467077  0.251262  ...     14.809396     34.124758\n\n[1 rows x 6 columns]\n",
+    "stdout_sha256": "0c0af3a5b665f05ead0d91624933bfd642523e4c435665c36256573567e17526",
+    "var_summary": {
+      "Auto": {
+        "type": "DataFrame",
+        "shape": [
+          392,
+          10
+        ],
+        "columns": [
+          "rownames",
+          "mpg",
+          "cylinders",
+          "displacement",
+          "horsepower",
+          "weight",
+          "acceleration",
+          "year",
+          "origin",
+          "name"
+        ],
+        "na_total": 0,
+        "numeric_means": {
+          "rownames": 198.520408,
+          "mpg": 23.445918,
+          "cylinders": 5.471939,
+          "displacement": 194.41199,
+          "horsepower": 104.469388,
+          "weight": 2977.584184,
+          "acceleration": 15.541327,
+          "year": 75.979592,
+          "origin": 1.576531
+        },
+        "numeric_sds": {
+          "rownames": 114.438067,
+          "mpg": 7.805007,
+          "cylinders": 1.705783,
+          "displacement": 104.644004,
+          "horsepower": 38.49116,
+          "weight": 849.40256,
+          "acceleration": 2.758864,
+          "year": 3.683737,
+          "origin": 0.805518
+        }
+      },
+      "X": {
+        "type": "ndarray",
+        "shape": [
+          392,
+          2
+        ],
+        "dtype": "float64",
+        "mean": 52.734694,
+        "std": 58.478504,
+        "sum": 41344.0,
+        "min": 1.0,
+        "max": 230.0
+      },
+      "Y": {
+        "type": "ndarray",
+        "shape": [
+          392,
+          1
+        ],
+        "dtype": "float64",
+        "mean": 23.445918,
+        "std": 7.805007,
+        "sum": 9190.8,
+        "min": 9.0,
+        "max": 46.6
+      },
+      "model1_fit": {
+        "type": "RegressionResultsWrapper",
+        "params": [
+          39.935861,
+          -0.157845
+        ]
+      },
+      "n": {
+        "type": "scalar",
+        "value": null
+      },
+      "xnew": {
+        "type": "ndarray",
+        "shape": [
+          1,
+          2
+        ],
+        "dtype": "float64",
+        "mean": 49.5,
+        "std": 68.589358,
+        "sum": 99.0,
+        "min": 1.0,
+        "max": 98.0
+      }
+    },
+    "var_summary_sha256": "2d86a71d370beca340a3764fff1c2bbedc350287ad3e1d0804a308a6cb40da29"
+  }
+}
