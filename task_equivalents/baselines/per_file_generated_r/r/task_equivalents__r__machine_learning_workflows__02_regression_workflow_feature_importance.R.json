@@ -2,12 +2,12 @@
   "meta": {
     "language": "r",
     "path": "task_equivalents/r/machine_learning_workflows/02_regression_workflow_feature_importance.R",
-    "generated_at_utc": "2026-04-07T09:15:59.565270+00:00"
+    "generated_at_utc": "2026-04-07T13:49:33.768522+00:00"
   },
   "entry": {
     "language": "r",
     "path": "task_equivalents/r/machine_learning_workflows/02_regression_workflow_feature_importance.R",
-    "script_sha256": "0e2db01b591300e0fb8bb438101a44f6a5af27afdeaf707d5ade0c39a9250dfa",
+    "script_sha256": "e99da56f9666c7a3e90adc3f04de219179ea06cc7eaa4cf0e405c87e319051d9",
     "exit_code": 0,
     "stderr": "Loaded gbm 2.2.3\nThis version of gbm is no longer under development. Consider transitioning to gbm3, https://github.com/gbm-developers/gbm3\nLoading required package: Matrix\nLoaded glmnet 4.1-10\n",
     "stderr_sha256": "7e1638106dbc7e312bd161e7b826e6e9471bc8ce3a9137714630be16dcea3b4f",
@@ -93,6 +93,10 @@
         "type": "character",
         "length": 0,
         "unique_count": 0
+      },
+      "char_cols": {
+        "type": "logical",
+        "length": 20
       },
       "cv.out": {
         "type": "cv.glmnet",
@@ -277,6 +281,6 @@
         "max": 7.8079
       }
     },
-    "var_summary_sha256": "da8af4ab772880311bc406ad3caedca4aae363aae01bbcbf8f45638f539bbb0b"
+    "var_summary_sha256": "edf8ae1f4ebf441232ce0e98226ca1c88da0dbc9beccff2596e270a8d9c40db5"
   }
 }

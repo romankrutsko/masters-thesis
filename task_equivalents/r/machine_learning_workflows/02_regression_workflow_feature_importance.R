@@ -1,8 +1,10 @@
 # Extracted from Ch08.R (Q10 boosting/lasso workflow)
 
-library(ISLR)
 library(gbm)
 library(glmnet)
+Hitters = read.csv('data/csv/Hitters.csv', header=TRUE, row.names=1)
+char_cols = sapply(Hitters, is.character)
+Hitters[char_cols] = lapply(Hitters[char_cols], as.factor)
 
 Hitters = na.omit(Hitters)
 Hitters$logSal = log(Hitters$Salary)

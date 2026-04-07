@@ -2,12 +2,12 @@
   "meta": {
     "language": "r",
     "path": "task_equivalents/r/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.R",
-    "generated_at_utc": "2026-04-07T09:15:59.565270+00:00"
+    "generated_at_utc": "2026-04-07T13:49:33.768522+00:00"
   },
   "entry": {
     "language": "r",
     "path": "task_equivalents/r/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.R",
-    "script_sha256": "d9432384167a65bccac5bb8afd7c9329fa52d3a70ced75072c1a779981761e03",
+    "script_sha256": "0d4f74ecbccdac8c33d0619339fe263d10f3908eaf1b1f8ff339354d3800f5f6",
     "exit_code": 0,
     "stderr": "",
     "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -15,6 +15,43 @@
     "stdout": "",
     "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "var_summary": {
+      "Auto": {
+        "type": "data.frame",
+        "nrow": 392,
+        "ncol": 9,
+        "colnames": [
+          "mpg",
+          "cylinders",
+          "displacement",
+          "horsepower",
+          "weight",
+          "acceleration",
+          "year",
+          "origin",
+          "name"
+        ],
+        "na_total": 0,
+        "numeric_means": {
+          "mpg": 23.4459,
+          "cylinders": 5.4719,
+          "displacement": 194.412,
+          "horsepower": 104.4694,
+          "weight": 2977.5842,
+          "acceleration": 15.5413,
+          "year": 75.9796,
+          "origin": 1.5765
+        },
+        "numeric_sds": {
+          "mpg": 7.805,
+          "cylinders": 1.7058,
+          "displacement": 104.644,
+          "horsepower": 38.4912,
+          "weight": 849.4026,
+          "acceleration": 2.7589,
+          "year": 3.6837,
+          "origin": 0.8055
+        }
+      },
       "captured": {
         "type": "character",
         "length": 0,
@@ -120,6 +157,6 @@
         "best_performance": 0.0637
       }
     },
-    "var_summary_sha256": "579caf66fd72f2fb5b9a8f963e29ff59985fd8d75314cb4456b4f3c1b2cbc914"
+    "var_summary_sha256": "642a8a0b2d09ef600e74b2e6eedd0da9315aceb37f003901f0b00201bcfa1fff"
   }
 }

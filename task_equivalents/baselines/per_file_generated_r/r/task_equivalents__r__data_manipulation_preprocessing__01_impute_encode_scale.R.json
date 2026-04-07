@@ -2,12 +2,12 @@
   "meta": {
     "language": "r",
     "path": "task_equivalents/r/data_manipulation_preprocessing/01_impute_encode_scale.R",
-    "generated_at_utc": "2026-04-07T09:15:59.565270+00:00"
+    "generated_at_utc": "2026-04-07T13:49:33.768522+00:00"
   },
   "entry": {
     "language": "r",
     "path": "task_equivalents/r/data_manipulation_preprocessing/01_impute_encode_scale.R",
-    "script_sha256": "18d8e53ab348851ecf9443f8d0412784a267deadb998dbf8e76141079cd5abd4",
+    "script_sha256": "edc8cbe37c5dd727c211160e364f4e52f808c8b12934b0c89305e9bfaafe2e10",
     "exit_code": 0,
     "stderr": "",
     "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -15,6 +15,43 @@
     "stdout": "",
     "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "var_summary": {
+      "Auto": {
+        "type": "data.frame",
+        "nrow": 392,
+        "ncol": 9,
+        "colnames": [
+          "mpg",
+          "cylinders",
+          "displacement",
+          "horsepower",
+          "weight",
+          "acceleration",
+          "year",
+          "origin",
+          "name"
+        ],
+        "na_total": 0,
+        "numeric_means": {
+          "mpg": 23.4459,
+          "cylinders": 5.4719,
+          "displacement": 194.412,
+          "horsepower": 104.4694,
+          "weight": 2977.5842,
+          "acceleration": 15.5413,
+          "year": 75.9796,
+          "origin": 1.5765
+        },
+        "numeric_sds": {
+          "mpg": 7.805,
+          "cylinders": 1.7058,
+          "displacement": 104.644,
+          "horsepower": 38.4912,
+          "weight": 849.4026,
+          "acceleration": 2.7589,
+          "year": 3.6837,
+          "origin": 0.8055
+        }
+      },
       "captured": {
         "type": "character",
         "length": 0,
@@ -116,6 +153,6 @@
         ]
       }
     },
-    "var_summary_sha256": "ad958f372d59bd4dafe4b154a459c32d97bc49acb22d691be8850246c19c57fb"
+    "var_summary_sha256": "528cb51461bb099e06bce878f7e13a7cba21af39f1101880091b77a0520c4dc6"
   }
 }

@@ -1,7 +1,7 @@
 # Extracted from Ch09.R (Q7 SVM tuning workflow)
 
-library(ISLR)
 library(e1071)
+Auto = read.csv('data/csv/Auto.csv', header=TRUE, na.strings='?', row.names=1)
 
 mpg01 = ifelse(Auto$mpg > median(Auto$mpg), 1, 0)
 df    = data.frame(x=Auto[,2:7], y=as.factor(mpg01))

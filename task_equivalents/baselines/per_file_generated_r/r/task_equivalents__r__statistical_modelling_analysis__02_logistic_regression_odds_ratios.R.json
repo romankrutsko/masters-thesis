@@ -2,12 +2,12 @@
   "meta": {
     "language": "r",
     "path": "task_equivalents/r/statistical_modelling_analysis/02_logistic_regression_odds_ratios.R",
-    "generated_at_utc": "2026-04-07T09:15:59.565270+00:00"
+    "generated_at_utc": "2026-04-07T13:49:33.768522+00:00"
   },
   "entry": {
     "language": "r",
     "path": "task_equivalents/r/statistical_modelling_analysis/02_logistic_regression_odds_ratios.R",
-    "script_sha256": "3a903925150cb17752ded9a2ef61684786a7ba930bef14c8656c8182aa520e76",
+    "script_sha256": "d52d9c302546bd433fd4be19074452889771ef71bd3461dee01c5e0e713cb274",
     "exit_code": 0,
     "stderr": "",
     "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -61,8 +61,45 @@
         "type": "character",
         "length": 1,
         "unique_count": 1
+      },
+      "Weekly": {
+        "type": "data.frame",
+        "nrow": 1089,
+        "ncol": 9,
+        "colnames": [
+          "Year",
+          "Lag1",
+          "Lag2",
+          "Lag3",
+          "Lag4",
+          "Lag5",
+          "Volume",
+          "Today",
+          "Direction"
+        ],
+        "na_total": 0,
+        "numeric_means": {
+          "Year": 2000.0487,
+          "Lag1": 0.1506,
+          "Lag2": 0.1511,
+          "Lag3": 0.1472,
+          "Lag4": 0.1458,
+          "Lag5": 0.1399,
+          "Volume": 1.5746,
+          "Today": 0.1499
+        },
+        "numeric_sds": {
+          "Year": 6.0332,
+          "Lag1": 2.357,
+          "Lag2": 2.3573,
+          "Lag3": 2.3605,
+          "Lag4": 2.3603,
+          "Lag5": 2.3613,
+          "Volume": 1.6866,
+          "Today": 2.3569
+        }
       }
     },
-    "var_summary_sha256": "c925e0473feb12d2d4f263aa525423fa7a1e1d2e27863b42ca7135e7661b175c"
+    "var_summary_sha256": "c11721493adf0ccfe6463def55c6c3d514daa29bd2b5540ce6f9a8158aeaee02"
   }
 }
