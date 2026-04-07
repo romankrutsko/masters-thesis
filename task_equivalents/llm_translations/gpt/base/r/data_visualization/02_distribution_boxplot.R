@@ -1,5 +1,6 @@
 library(readr)
 library(dplyr)
+library(ggplot2)
 
 college <- read_csv("data/csv/College.csv")
 
@@ -9,11 +10,12 @@ college <- college[, -1]
 
 college$Private <- as.factor(college$Private)
 
-college$Elite <- ifelse(college$Top10perc > 50, "Yes", "No")
+college <- college %>%
+mutate(Elite = ifelse(Top10perc > 50, "Yes", "No"))
+
 college$Elite <- as.factor(college$Elite)
 
-boxplot(Outstate ~ Elite, data = college,
-xlab = "Elite", ylab = "Outstate")
+boxplot(Outstate ~ Elite, data = college, xlab = "Elite", ylab = "Outstate")
 
 par(mfrow = c(2, 2))
 hist(college$Apps, breaks = 50, xlab = "new applications", main = "")

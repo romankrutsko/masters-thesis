@@ -1,57 +1,58 @@
 import numpy as np
 import pandas as pd
-from patsy import dmatrices, dmatrix
-from sklearn.linear_model import LassoCV
-from sklearn.metrics import mean_squared_error
 from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.linear_model import LassoCV
 
-Hitters = pd.read_csv("data/csv/Hitters.csv", header=0, index_col=0)
+Hitters = pd.read_csv('data/csv/Hitters.csv', header=0, index_col=0)
 
-char_cols = Hitters.select_dtypes(include=["object"]).columns
-for col in char_cols:
-    Hitters[col] = Hitters[col].astype("category")
+Hitters = Hitters.dropna()
+drop_cols = [col for col in ['rownames', 'Player', 'Name'] if col in Hitters.columns]
+Hitters = Hitters.drop(columns=drop_cols)
+Hitters['League'] = np.where(Hitters['League'] == 'A', 0, 1)
+Hitters['NewLeague'] = np.where(Hitters['NewLeague'] == 'A', 0, 1)
+Hitters['Division'] = np.where(Hitters['Division'] == 'E', 0, 1)
+Hitters['logSal'] = np.log(Hitters['Salary'])
 
-Hitters = Hitters.dropna().copy()
-Hitters["logSal"] = np.log(Hitters["Salary"])
+x = Hitters.drop(columns=['Salary', 'logSal'])
+y = Hitters['logSal']
 
 np.random.seed(1)
-train = np.random.choice(Hitters.index, size=200, replace=False)
-hit_test = Hitters.loc[~Hitters.index.isin(train), "logSal"]
+train = np.random.choice(np.arange(len(x)), size=200, replace=False)
+test = np.setdiff1d(np.arange(len(x)), train)
+xtrain = x.iloc[train]
+xtest = x.iloc[test]
+ytrain = y.iloc[train]
+ytest = y.iloc[test]
 
-j = 0
 train_mse = np.zeros(20)
-for i in np.arange(0.001, 0.201, 0.01):
+lambda_grid = np.linspace(0.001, 0.201, 20)
+
+for i, lam in enumerate(lambda_grid):
     boost_hit = GradientBoostingRegressor(
         n_estimators=1000,
-        learning_rate=i,
+        learning_rate=lam,
         random_state=1
     )
-    X_train_boost = dmatrix("~ . - Salary - logSal", data=Hitters.loc[train], return_type="dataframe")
-    y_train_boost = Hitters.loc[train, "logSal"]
-    boost_hit.fit(X_train_boost, y_train_boost)
-    boost_pred = boost_hit.predict(X_train_boost)
-    train_mse[j] = mean_squared_error(y_train_boost, boost_pred)
-    j += 1
+    boost_hit.fit(xtrain, ytrain)
+    boost_pred = boost_hit.predict(xtrain)
+    train_mse[i] = np.mean((boost_pred - ytrain) ** 2)
 
-x_train = dmatrix("~ . - Salary - logSal", data=Hitters.loc[train], return_type="dataframe")
-y_train = Hitters.loc[train, "logSal"]
-x_test = dmatrix("~ . - Salary - logSal", data=Hitters.loc[~Hitters.index.isin(train)], return_type="dataframe")
-
-cv_out = LassoCV(cv=10, random_state=1, max_iter=10000)
-cv_out.fit(x_train, y_train)
+cv_out = LassoCV(cv=10, random_state=1)
+cv_out.fit(xtrain.to_numpy(), ytrain.to_numpy())
 bestlam = cv_out.alpha_
-lasso_pred = cv_out.predict(x_test)
-lasso_mse = mean_squared_error(hit_test, lasso_pred)
+lasso_pred = cv_out.predict(xtest.to_numpy())
+lasso_mse = np.mean((lasso_pred - ytest.to_numpy()) ** 2)
 
+best_lambda = lambda_grid[np.argmin(train_mse)]
 best_boost_hit = GradientBoostingRegressor(
     n_estimators=1000,
-    learning_rate=0.011,
+    learning_rate=best_lambda,
     random_state=1
 )
-best_boost_hit.fit(X_train_boost, y_train_boost)
+best_boost_hit.fit(xtrain, ytrain)
 
 feature_importance = pd.Series(
     best_boost_hit.feature_importances_,
-    index=X_train_boost.columns
+    index=xtrain.columns
 ).sort_values(ascending=False)
 print(feature_importance)

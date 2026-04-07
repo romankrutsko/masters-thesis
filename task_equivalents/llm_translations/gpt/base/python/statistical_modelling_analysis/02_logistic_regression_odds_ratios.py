@@ -1,21 +1,16 @@
-import numpy as np
 import pandas as pd
-import statsmodels.formula.api as smf
+import statsmodels.api as sm
 
-Weekly = pd.read_csv("data/csv/Weekly.csv", header=0, index_col=0)
-Weekly["Direction"] = Weekly["Direction"].astype("category")
+Weekly = pd.read_csv('data/csv/Weekly.csv', header=0, index_col=0)
 
-glm1_fit = smf.glm(
-    "Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume",
-    data=Weekly,
-    family=smf.families.Binomial()
-).fit()
-print(glm1_fit.summary())
+x01 = Weekly.iloc[:, 2:8]
+y01 = (Weekly['Direction'] == 'Up').astype(int)
 
-n = Weekly.shape[0]
-glm1_prob = glm1_fit.predict(Weekly)
-glm1_pred = np.full(n, "Down", dtype=object)
-glm1_pred[glm1_prob > 0.5] = "Up"
+x01_with_const = sm.add_constant(x01)
+glm0_fit = sm.GLM(y01, x01_with_const, family=sm.families.Binomial()).fit()
+print(glm0_fit.summary())
 
-print(pd.crosstab(glm1_pred, Weekly["Direction"]))
-print(np.mean(glm1_pred == Weekly["Direction"]))
+prob = glm0_fit.predict(x01_with_const)
+pred = (prob > 0.5).astype(int)
+print(pd.crosstab(y01, pred, rownames=['Actual'], colnames=['Predicted']))
+print((pred == y01).mean())

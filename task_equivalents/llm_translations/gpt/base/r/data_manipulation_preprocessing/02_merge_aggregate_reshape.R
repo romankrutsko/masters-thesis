@@ -1,13 +1,11 @@
 library(readr)
 library(dplyr)
-library(tibble)
-library(caTools)
 
 College <- read_csv("data/csv/College.csv")
 
 school_name <- College[[1]]
-College <- College %>%
-column_to_rownames(var = names(College)[1])
+rownames(College) <- school_name
+College <- College[, -1]
 
 College <- College %>%
 mutate(Private01 = ifelse(Private == "Yes", 1, 0)) %>%
@@ -20,9 +18,9 @@ mutate(across(everything(), as.numeric))
 Y <- College$Apps
 
 set.seed(1)
-split <- sample.split(Y, SplitRatio = 0.5)
+train_idx <- sample(seq_len(nrow(College)), size = floor(0.5 * nrow(College)))
 
-xtrain <- X[split, ]
-xtest <- X[!split, ]
-ytrain <- Y[split]
-ytest <- Y[!split]
+xtrain <- X[train_idx, ]
+xtest <- X[-train_idx, ]
+ytrain <- Y[train_idx]
+ytest <- Y[-train_idx]

@@ -1,6 +1,5 @@
 library(readr)
 library(dplyr)
-library(scale)
 
 Auto <- read_csv("data/csv/Auto.csv", na = "?") %>%
 na.omit()
@@ -16,8 +15,8 @@ scaled_var <- scale(Auto[, var_to_scale])
 
 df <- bind_cols(
 as.data.frame(scaled_var) %>% setNames(var_to_scale),
-Auto %>% select(all_of(var_no_scale))
+Auto[, var_no_scale]
 )
 
-x <- df[, -ncol(df)]
+x <- df[, 1:(ncol(df) - 1)]
 y <- df$mpg01
