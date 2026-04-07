@@ -3,33 +3,39 @@
 library(gbm)
 library(glmnet)
 Hitters = read.csv('data/csv/Hitters.csv', header=TRUE, row.names=1)
-char_cols = sapply(Hitters, is.character)
-Hitters[char_cols] = lapply(Hitters[char_cols], as.factor)
 
 Hitters = na.omit(Hitters)
+drop_cols = intersect(c('rownames', 'Player', 'Name'), colnames(Hitters))
+Hitters = Hitters[, setdiff(colnames(Hitters), drop_cols), drop=FALSE]
+Hitters$League = ifelse(Hitters$League == 'A', 0, 1)
+Hitters$NewLeague = ifelse(Hitters$NewLeague == 'A', 0, 1)
+Hitters$Division = ifelse(Hitters$Division == 'E', 0, 1)
 Hitters$logSal = log(Hitters$Salary)
 
-set.seed(1)
-train    = sample(1:nrow(Hitters), 200)
-hit.test = Hitters[-train,'logSal']
+x = subset(Hitters, select=-c(Salary, logSal))
+y = Hitters$logSal
 
-j         = 0
+set.seed(1)
+train = sample(1:nrow(x), 200)
+test = setdiff(1:nrow(x), train)
+xtrain = x[train,]
+xtest = x[test,]
+ytrain = y[train]
+ytest = y[test]
+
 train.mse = rep(0, 20)
-for (i in seq(0.001, 0.201, 0.01)) {
-  j = j + 1
-  boost.hit = gbm(logSal~.-Salary, data=Hitters[train,], distribution='gaussian', n.trees=1000, shrinkage=i)
-  boost.pred = predict(boost.hit, newdata=Hitters[train,], n.trees=1000, shrinkage=i)
-  train.mse[j] = mean((boost.pred - Hitters[train,'logSal'])^2)
+lambda.grid = seq(0.001, 0.201, length.out=20)
+for (i in seq_along(lambda.grid)) {
+  boost.hit = gbm(ytrain~., data=data.frame(xtrain, ytrain=ytrain), distribution='gaussian', n.trees=1000, shrinkage=lambda.grid[i], verbose=FALSE)
+  boost.pred = predict(boost.hit, newdata=xtrain, n.trees=1000)
+  train.mse[i] = mean((boost.pred - ytrain)^2)
 }
 
-x.train = model.matrix(logSal~.-Salary, Hitters[train,])[,-1]
-y.train = Hitters[train,'logSal']
-x.test  = model.matrix(logSal~.-Salary, Hitters[-train,])[,-1]
-
-cv.out     = cv.glmnet(x.train, y.train, alpha=1)
+cv.out     = cv.glmnet(as.matrix(xtrain), ytrain, alpha=1, nfolds=10)
 bestlam    = cv.out$lambda.min
-lasso.pred = predict(cv.out, s=bestlam, newx=x.test)
-lasso.mse  = mean((lasso.pred-hit.test)^2)
+lasso.pred = predict(cv.out, s=bestlam, newx=as.matrix(xtest))
+lasso.mse  = mean((lasso.pred-ytest)^2)
 
-best.boost.hit = gbm(logSal~.-Salary, data=Hitters[train,], distribution='gaussian', n.trees=1000, shrinkage=0.011)
+best.lambda = lambda.grid[which.min(train.mse)]
+best.boost.hit = gbm(ytrain~., data=data.frame(xtrain, ytrain=ytrain), distribution='gaussian', n.trees=1000, shrinkage=best.lambda, verbose=FALSE)
 summary(best.boost.hit)

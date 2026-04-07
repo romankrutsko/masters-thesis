@@ -15,4 +15,6 @@ model1_fit = sm.OLS(Y, X).fit()
 print(model1_fit.summary())
 
 xnew = np.array([[1., 98.]])
-print(model1_fit.get_prediction(xnew).summary_frame(alpha=0.05))
+pred = model1_fit.get_prediction(xnew).summary_frame(alpha=0.05)
+print(pred[['mean', 'mean_ci_lower', 'mean_ci_upper']])
+print(pred[['mean', 'obs_ci_lower', 'obs_ci_upper']])
