@@ -1,0 +1,17 @@
+The following code is the R translation of the provided Python code:
+
+
+```{r}
+library(stats)
+library(dplyr)
+library(caret)
+Weekly = read.csv('data/csv/Weekly.csv')
+x01 = model.matrix(Direction ~ . - Direction, data = Weekly)[, -1]
+y01 = ifelse(Weekly$Direction == 'Up', 1, 0)
+glm0_fit = glm(Direction ~ . - Direction, data = Weekly, family = binomial)
+summary(glm0_fit)
+prob = predict(glm0_fit, type = 'response')
+pred = ifelse(prob > 0.5, 1, 0)
+confusionMatrix(factor(pred), factor(y01))
+mean(pred == y01)
+```
