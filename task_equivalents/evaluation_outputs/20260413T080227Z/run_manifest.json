@@ -1,0 +1,22 @@
+{
+  "generated_at_utc": "2026-04-13T08:02:27.176339+00:00",
+  "repo_root": "/Users/romankrutsko/PycharmProjects/MastersThesis",
+  "llm_root": "/Users/romankrutsko/PycharmProjects/MastersThesis/task_equivalents/llm_translations",
+  "candidate_count": 128,
+  "args": {
+    "mode": "execution",
+    "python_bin": "/Users/romankrutsko/PycharmProjects/MastersThesis/.venv/bin/python3",
+    "rscript_bin": "Rscript",
+    "digits": 4,
+    "atol": 0.001,
+    "rtol": 0.001,
+    "score_decimals": 1,
+    "sonar_scanner_bin": "sonar-scanner",
+    "sonar_host_url": "http://localhost:9000",
+    "sonar_project_prefix": "masters_thesis_translations",
+    "output_dir": "/Users/romankrutsko/PycharmProjects/MastersThesis/task_equivalents/evaluation_outputs/20260413T080227Z",
+    "models": "",
+    "prompt_types": "",
+    "languages": ""
+  }
+}
