@@ -39,7 +39,15 @@ def short_text(s: str, limit: int = 4000) -> str:
     return s[:limit] + "\n...[truncated]..."
 
 
-def run_python_baseline(script_path: Path, python_bin: str) -> dict:
+def ensure_text(value: str | bytes | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value
+
+
+def run_python_baseline(script_path: Path, python_bin: str, timeout_sec: float | None = None) -> dict:
     helper = r'''
 import contextlib
 import io
@@ -218,14 +226,31 @@ print(json.dumps(sanitize(result)))
     env["MPLCONFIGDIR"] = "/tmp/mplcfg"
     env["PYTHONDONTWRITEBYTECODE"] = "1"
 
-    proc = subprocess.run(
-        [python_bin, "-c", helper],
-        cwd=str(REPO_ROOT),
-        env=env,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            [python_bin, "-c", helper],
+            cwd=str(REPO_ROOT),
+            env=env,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=timeout_sec,
+        )
+    except subprocess.TimeoutExpired as exc:
+        stdout = ensure_text(exc.stdout)
+        stderr = ensure_text(exc.stderr)
+        return {
+            "language": "python",
+            "path": str(script_path.relative_to(REPO_ROOT)),
+            "script_sha256": sha256_file(script_path),
+            "exit_code": None,
+            "status": "error",
+            "error": f"python script timed out after {timeout_sec:.1f}s" if timeout_sec is not None else "python script timed out",
+            "stdout": short_text(stdout),
+            "stdout_sha256": sha256_text(stdout),
+            "stderr": short_text(stderr),
+            "stderr_sha256": sha256_text(stderr),
+        }
 
     base = {
         "language": "python",
@@ -263,7 +288,7 @@ print(json.dumps(sanitize(result)))
     return base
 
 
-def run_r_baseline(script_path: Path, rscript_bin: str) -> dict:
+def run_r_baseline(script_path: Path, rscript_bin: str, timeout_sec: float | None = None) -> dict:
     escaped_path = str(script_path).replace("'", "\\'")
     wrapper = f"""
 options(stringsAsFactors = FALSE)
@@ -377,13 +402,30 @@ cat('\\n---SUMMARY_JSON_END---\\n')
         wrapper_path = Path(f.name)
 
     try:
-        proc = subprocess.run(
-            [rscript_bin, str(wrapper_path)],
-            cwd=str(REPO_ROOT),
-            text=True,
-            capture_output=True,
-            check=False,
-        )
+        try:
+            proc = subprocess.run(
+                [rscript_bin, str(wrapper_path)],
+                cwd=str(REPO_ROOT),
+                text=True,
+                capture_output=True,
+                check=False,
+                timeout=timeout_sec,
+            )
+        except subprocess.TimeoutExpired as exc:
+            stdout = ensure_text(exc.stdout)
+            stderr = ensure_text(exc.stderr)
+            return {
+                "language": "r",
+                "path": str(script_path.relative_to(REPO_ROOT)),
+                "script_sha256": sha256_file(script_path),
+                "exit_code": None,
+                "status": "error",
+                "error": f"R script timed out after {timeout_sec:.1f}s" if timeout_sec is not None else "R script timed out",
+                "stdout": short_text(stdout),
+                "stdout_sha256": sha256_text(stdout),
+                "stderr": short_text(stderr),
+                "stderr_sha256": sha256_text(stderr),
+            }
     finally:
         wrapper_path.unlink(missing_ok=True)
 

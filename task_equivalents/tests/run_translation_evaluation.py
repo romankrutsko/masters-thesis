@@ -26,6 +26,7 @@ REF_ROOTS = {
     "r": TASK_EQ_ROOT / "r",
 }
 DEFAULT_OUTPUT_ROOT = TASK_EQ_ROOT / "evaluation_outputs"
+DEFAULT_BLACKLIST_FILE = TASK_EQ_ROOT / "tests" / "evaluation_blacklist.txt"
 
 BASE_WEIGHTS = {
     "kinds": 0.25,
@@ -116,6 +117,18 @@ def discover_candidates(root: Path) -> list[Candidate]:
 def parse_csv_set(raw: str) -> set[str]:
     vals = [x.strip() for x in raw.split(",") if x.strip()]
     return set(vals)
+
+
+def load_blacklist(path: Path) -> set[str]:
+    if not path.exists():
+        return set()
+
+    entries: set[str] = set()
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.split("#", 1)[0].strip()
+        if line:
+            entries.add(line)
+    return entries
 
 
 def discover_slices(candidates: list[Candidate]) -> list[Slice]:
@@ -299,10 +312,17 @@ def weighted_score(ref_profile: dict[str, Any], cand_profile: dict[str, Any], at
     return score, components, active_weights
 
 
-def run_script(mod, language: str, path: Path, python_bin: str, rscript_bin: str) -> dict[str, Any]:
+def run_script(
+    mod,
+    language: str,
+    path: Path,
+    python_bin: str,
+    rscript_bin: str,
+    timeout_sec: float | None = None,
+) -> dict[str, Any]:
     if language == "python":
-        return mod.run_python_baseline(path, python_bin=python_bin)
-    return mod.run_r_baseline(path, rscript_bin=rscript_bin)
+        return mod.run_python_baseline(path, python_bin=python_bin, timeout_sec=timeout_sec)
+    return mod.run_r_baseline(path, rscript_bin=rscript_bin, timeout_sec=timeout_sec)
 
 
 def to_rel(path: Path) -> str:
@@ -316,6 +336,7 @@ def evaluate_execution(
     candidates: list[Candidate],
     python_bin: str,
     rscript_bin: str,
+    execution_timeout: float | None,
     digits: int,
     atol: float,
     rtol: float,
@@ -361,7 +382,14 @@ def evaluate_execution(
             print("  -> missing reference")
             continue
 
-        ref_run = run_script(gb, c.language, ref_path, python_bin=python_bin, rscript_bin=rscript_bin)
+        ref_run = run_script(
+            gb,
+            c.language,
+            ref_path,
+            python_bin=python_bin,
+            rscript_bin=rscript_bin,
+            timeout_sec=execution_timeout,
+        )
         if ref_run.get("status") != "ok":
             row["status"] = "reference_error"
             row["error"] = (ref_run.get("stderr") or "Reference execution failed").splitlines()[-1] if (ref_run.get("stderr") or "") else "Reference execution failed"
@@ -369,7 +397,14 @@ def evaluate_execution(
             print(f"  -> reference error: {row['error']}")
             continue
 
-        cand_run = run_script(gb, c.language, c.path, python_bin=python_bin, rscript_bin=rscript_bin)
+        cand_run = run_script(
+            gb,
+            c.language,
+            c.path,
+            python_bin=python_bin,
+            rscript_bin=rscript_bin,
+            timeout_sec=execution_timeout,
+        )
         if cand_run.get("status") != "ok":
             row["status"] = "candidate_error"
             row["error"] = (cand_run.get("stderr") or "Candidate execution failed").splitlines()[-1] if (cand_run.get("stderr") or "") else "Candidate execution failed"
@@ -776,13 +811,21 @@ def evaluate_static(
     }
 
 
-def write_run_manifest(output_dir: Path, args: argparse.Namespace, candidates: list[Candidate]) -> Path:
+def write_run_manifest(
+    output_dir: Path,
+    args: argparse.Namespace,
+    candidates: list[Candidate],
+    blacklist_entries: set[str],
+    blacklisted_candidates: list[str],
+) -> Path:
     path = output_dir / "run_manifest.json"
     payload = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "repo_root": str(REPO_ROOT),
         "llm_root": str(LLM_ROOT),
         "candidate_count": len(candidates),
+        "blacklist_count": len(blacklist_entries),
+        "blacklisted_candidates": blacklisted_candidates,
         "args": {
             "mode": args.mode,
             "python_bin": args.python_bin,
@@ -791,6 +834,7 @@ def write_run_manifest(output_dir: Path, args: argparse.Namespace, candidates: l
             "atol": args.atol,
             "rtol": args.rtol,
             "score_decimals": args.score_decimals,
+            "execution_timeout": args.execution_timeout,
             "sonar_scanner_bin": args.sonar_scanner_bin,
             "sonar_host_url": args.sonar_host_url,
             "sonar_project_prefix": args.sonar_project_prefix,
@@ -798,6 +842,7 @@ def write_run_manifest(output_dir: Path, args: argparse.Namespace, candidates: l
             "models": args.models,
             "prompt_types": args.prompt_types,
             "languages": args.languages,
+            "blacklist_file": str(args.blacklist_file) if args.blacklist_file else "",
         },
     }
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -815,6 +860,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--atol", type=float, default=1e-3)
     parser.add_argument("--rtol", type=float, default=1e-3)
     parser.add_argument("--score-decimals", type=int, default=1)
+    parser.add_argument("--execution-timeout", type=float, default=120.0)
 
     parser.add_argument("--sonar-scanner-bin", default="sonar-scanner")
     parser.add_argument("--sonar-host-url", default=os.environ.get("SONAR_HOST_URL", "http://localhost:9000"))
@@ -826,6 +872,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--models", default="")
     parser.add_argument("--prompt-types", default="")
     parser.add_argument("--languages", default="")
+    parser.add_argument("--blacklist-file", type=Path, default=DEFAULT_BLACKLIST_FILE)
     return parser.parse_args()
 
 
@@ -842,6 +889,19 @@ def main() -> int:
     if args.languages.strip():
         allowed = parse_csv_set(args.languages)
         candidates = [c for c in candidates if c.language in allowed]
+
+    blacklist_entries = load_blacklist(args.blacklist_file)
+    blacklisted_candidates: list[str] = []
+    if blacklist_entries:
+        kept: list[Candidate] = []
+        for c in candidates:
+            rel = to_rel(c.path)
+            if rel in blacklist_entries:
+                blacklisted_candidates.append(rel)
+                continue
+            kept.append(c)
+        candidates = kept
+
     if not candidates:
         print(f"No candidate files found under: {LLM_ROOT}")
         return 2
@@ -851,10 +911,13 @@ def main() -> int:
     ensure_dir(output_dir)
     ensure_dir(output_dir / "static")
 
-    write_run_manifest(output_dir, args, candidates)
+    write_run_manifest(output_dir, args, candidates, blacklist_entries, blacklisted_candidates)
 
     print(f"Run ID: {run_id}")
     print(f"Candidates discovered: {len(candidates)}")
+    if blacklist_entries:
+        print(f"Blacklist file: {args.blacklist_file}")
+        print(f"Candidates excluded by blacklist: {len(blacklisted_candidates)}")
 
     if args.mode in {"all", "execution"}:
         print("Running execution scoring...")
@@ -862,6 +925,7 @@ def main() -> int:
             candidates,
             python_bin=args.python_bin,
             rscript_bin=args.rscript_bin,
+            execution_timeout=args.execution_timeout,
             digits=args.digits,
             atol=args.atol,
             rtol=args.rtol,

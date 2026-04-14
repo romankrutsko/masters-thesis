@@ -1,0 +1,26 @@
+{
+  "generated_at_utc": "2026-04-14T15:40:40.706272+00:00",
+  "repo_root": "/home/romakrut/PycharmProjects/masters-thesis",
+  "llm_root": "/home/romakrut/PycharmProjects/masters-thesis/task_equivalents/llm_translations",
+  "candidate_count": 128,
+  "blacklist_count": 0,
+  "blacklisted_candidates": [],
+  "args": {
+    "mode": "execution",
+    "python_bin": "/home/romakrut/PycharmProjects/masters-thesis/.venv/bin/python3",
+    "rscript_bin": "Rscript",
+    "digits": 4,
+    "atol": 0.001,
+    "rtol": 0.001,
+    "score_decimals": 1,
+    "execution_timeout": 120.0,
+    "sonar_scanner_bin": "sonar-scanner",
+    "sonar_host_url": "http://localhost:9000",
+    "sonar_project_prefix": "masters_thesis_translations",
+    "output_dir": "/home/romakrut/PycharmProjects/masters-thesis/task_equivalents/evaluation_outputs/rerun_timeout_120s_all",
+    "models": "",
+    "prompt_types": "",
+    "languages": "",
+    "blacklist_file": "/tmp/nonexistent_blacklist.txt"
+  }
+}

@@ -55,6 +55,16 @@ Run a subset:
   --languages python,r
 ```
 
+Blacklist failing or expensive candidates:
+
+```bash
+.venv/bin/python task_equivalents/tests/run_translation_evaluation.py \
+  --mode all \
+  --blacklist-file task_equivalents/tests/evaluation_blacklist.txt
+```
+
+The blacklist file uses one repo-relative candidate path per line. By default, the evaluator reads `task_equivalents/tests/evaluation_blacklist.txt`.
+
 ## Notes
 
 - Execution scoring does not enforce a fail threshold. It always records scores in `[0.0, 1.0]`.
