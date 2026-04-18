@@ -299,6 +299,18 @@ def write_csv_row(writer: csv.DictWriter, row: dict[str, object], handle) -> Non
     handle.flush()
 
 
+def sync_file(handle) -> None:
+    handle.flush()
+    os.fsync(handle.fileno())
+
+
+def write_json_atomic(path: Path, payload: dict[str, object]) -> None:
+    ensure_parent_dir(path)
+    tmp_path = path.with_suffix(f"{path.suffix}.tmp")
+    tmp_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    os.replace(tmp_path, path)
+
+
 def make_csv_row(candidate: CandidateScript, run_id: int, result: RunResult) -> dict[str, object]:
     return {
         "implementation_type": candidate.implementation_type,
@@ -360,6 +372,10 @@ def summary_payload(
     failed_runs: int,
     started_at: str,
     finished_at: str,
+    completed_scripts: int,
+    total_scripts: int,
+    status: str,
+    current_script: str,
 ) -> dict[str, object]:
     return {
         "generated_at_utc": finished_at,
@@ -375,9 +391,13 @@ def summary_payload(
         "blacklist_file": str(Path(args.blacklist_file).resolve()) if args.blacklist_file else "",
         "scripts_discovered": len(scripts),
         "scripts_skipped_by_blacklist": blacklist_skipped,
+        "completed_scripts": completed_scripts,
+        "remaining_scripts": max(total_scripts - completed_scripts, 0),
         "measured_runs_attempted": total_attempted_runs,
         "successful_runs": successful_runs,
         "failed_runs": failed_runs,
+        "status": status,
+        "current_script": current_script,
     }
 
 
@@ -406,18 +426,41 @@ def run_benchmark(args: argparse.Namespace) -> int:
     total_attempted_runs = 0
     successful_runs = 0
     failed_runs = 0
+    total_scripts = len(scripts)
+
+    def checkpoint(*, completed_scripts: int, status: str, current_script: str) -> None:
+        payload = summary_payload(
+            args=args,
+            run_dir=run_dir,
+            output_csv=output_csv,
+            output_json=output_json,
+            scripts=scripts,
+            blacklist_skipped=blacklist_skipped,
+            total_attempted_runs=total_attempted_runs,
+            successful_runs=successful_runs,
+            failed_runs=failed_runs,
+            started_at=started_at,
+            finished_at=datetime.now(timezone.utc).isoformat(),
+            completed_scripts=completed_scripts,
+            total_scripts=total_scripts,
+            status=status,
+            current_script=current_script,
+        )
+        write_json_atomic(output_json, payload)
 
     with output_csv.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=csv_fieldnames())
         writer.writeheader()
-        handle.flush()
+        sync_file(handle)
+        checkpoint(completed_scripts=0, status="running", current_script="")
 
-        total_scripts = len(scripts)
         for script_index, candidate in enumerate(scripts, start=1):
-            print(
-                f"[{script_index}/{total_scripts}] "
+            script_label = (
                 f"{candidate.model}/{candidate.prompt_type}/{candidate.language}/"
                 f"{candidate.category}/{candidate.snippet}"
+            )
+            print(
+                f"[{script_index}/{total_scripts}] {script_label}"
             )
 
             command = build_interpreter_command(candidate.script_path)
@@ -447,11 +490,13 @@ def run_benchmark(args: argparse.Namespace) -> int:
                 row = make_csv_row(candidate, measured_index, result)
                 write_csv_row(writer, row, handle)
 
+            sync_file(handle)
+            checkpoint(completed_scripts=script_index, status="running", current_script=script_label)
+
             if script_index < total_scripts and args.pause_seconds > 0:
                 print(f"  sleeping {args.pause_seconds:.1f}s before next script", flush=True)
                 time.sleep(args.pause_seconds)
 
-    finished_at = datetime.now(timezone.utc).isoformat()
     summary = summary_payload(
         args=args,
         run_dir=run_dir,
@@ -463,9 +508,13 @@ def run_benchmark(args: argparse.Namespace) -> int:
         successful_runs=successful_runs,
         failed_runs=failed_runs,
         started_at=started_at,
-        finished_at=finished_at,
+        finished_at=datetime.now(timezone.utc).isoformat(),
+        completed_scripts=total_scripts,
+        total_scripts=total_scripts,
+        status="completed",
+        current_script="",
     )
-    output_json.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    write_json_atomic(output_json, summary)
     print_summary(summary)
     return 0
 
