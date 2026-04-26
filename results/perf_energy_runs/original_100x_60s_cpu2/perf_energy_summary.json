@@ -1,0 +1,22 @@
+{
+  "generated_at_utc": "2026-04-26T16:36:40.085108+00:00",
+  "started_at_utc": "2026-04-26T15:42:42.793463+00:00",
+  "base_dir": "/home/romakrut/PycharmProjects/masters-thesis/.tmp/perf_energy_original_layout",
+  "run_dir": "/home/romakrut/PycharmProjects/masters-thesis/results/perf_energy_runs/original_100x_60s_cpu2",
+  "output_csv": "/home/romakrut/PycharmProjects/masters-thesis/results/perf_energy_runs/original_100x_60s_cpu2/perf_energy_runs.csv",
+  "output_json": "/home/romakrut/PycharmProjects/masters-thesis/results/perf_energy_runs/original_100x_60s_cpu2/perf_energy_summary.json",
+  "runs_per_script": 100,
+  "warmup_runs": 1,
+  "pause_seconds": 60.0,
+  "timeout_seconds": 120.0,
+  "blacklist_file": "/home/romakrut/PycharmProjects/masters-thesis/task_equivalents/tests/evaluation_blacklist.txt",
+  "scripts_discovered": 16,
+  "scripts_skipped_by_blacklist": 0,
+  "completed_scripts": 16,
+  "remaining_scripts": 0,
+  "measured_runs_attempted": 1600,
+  "successful_runs": 1600,
+  "failed_runs": 0,
+  "status": "completed",
+  "current_script": ""
+}
