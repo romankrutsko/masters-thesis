@@ -1,0 +1,11 @@
+model,prompt_type,language,category,snippet,energy_joules_mean_pct_diff_vs_original,energy_joules_p_value_fdr_bh
+gemini,base,python,data_manipulation_preprocessing,02_merge_aggregate_reshape,-72.68025240508948,4.212401134716591e-34
+llama,optimized,python,data_manipulation_preprocessing,02_merge_aggregate_reshape,-72.5025155872368,4.212401134716591e-34
+gpt,optimized,python,data_manipulation_preprocessing,02_merge_aggregate_reshape,-72.34640811758841,4.212401134716591e-34
+gpt,base,python,data_manipulation_preprocessing,02_merge_aggregate_reshape,-72.3069110469545,4.212401134716591e-34
+gemini,base,python,data_manipulation_preprocessing,01_impute_encode_scale,-71.46017481589271,4.212401134716591e-34
+gemini,optimized,python,data_manipulation_preprocessing,01_impute_encode_scale,-71.3933160942708,4.212401134716591e-34
+gpt,optimized,python,data_manipulation_preprocessing,01_impute_encode_scale,-71.19568957888836,4.212401134716591e-34
+gemini,optimized,python,data_visualization,01_scatter_trend_grouped,-59.40702550005699,4.212401134716591e-34
+gpt,optimized,python,data_visualization,01_scatter_trend_grouped,-59.36205520578658,4.212401134716591e-34
+starcoder,base,python,data_visualization,02_distribution_boxplot,-50.76050668715536,4.212401134716591e-34

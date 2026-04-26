@@ -1,0 +1,26 @@
+{
+  "mann_whitney_candidate_count": 84,
+  "spearman_group_count": 119,
+  "mann_whitney_significant_counts_fdr_bh": {
+    "elapsed_seconds": 82,
+    "energy_joules": 74,
+    "avg_power_watts": 51
+  },
+  "spearman_significant_count_fdr_bh": 74,
+  "overall_spearman_elapsed_vs_energy": [
+    {
+      "dataset": "original",
+      "n_runs": 1600,
+      "spearman_rho_elapsed_vs_energy": 0.9955958179010638,
+      "p_value": 0.0,
+      "p_value_fdr_bh": 0.0
+    },
+    {
+      "dataset": "translation",
+      "n_runs": 8400,
+      "spearman_rho_elapsed_vs_energy": 0.9969256909869147,
+      "p_value": 0.0,
+      "p_value_fdr_bh": 0.0
+    }
+  ]
+}

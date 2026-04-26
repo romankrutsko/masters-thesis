@@ -1,0 +1,3 @@
+prompt_type,n_candidates,lower_than_original,higher_than_original,significant_lower,significant_higher,nonsignificant,median_pct_diff,median_abs_pct_diff,min_pct_diff,max_pct_diff
+base,45.0,23.0,22.0,23.0,21.0,1.0,-0.2045899422082009,10.6182408069191,-72.01246558023469,1452.5184345610885
+optimized,39.0,23.0,16.0,23.0,15.0,1.0,-0.8820227053577854,19.82270377203476,-72.0371081970344,1467.3661827480744

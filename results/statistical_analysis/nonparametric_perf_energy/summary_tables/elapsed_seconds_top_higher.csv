@@ -1,0 +1,11 @@
+model,prompt_type,language,category,snippet,elapsed_seconds_mean_pct_diff_vs_original,elapsed_seconds_p_value_fdr_bh
+starcoder,optimized,r,data_manipulation_preprocessing,01_impute_encode_scale,1467.3661827480744,3.710690831202167e-34
+starcoder,base,r,data_manipulation_preprocessing,01_impute_encode_scale,1452.5184345610885,3.710690831202167e-34
+llama,base,r,data_visualization,02_distribution_boxplot,869.1024223530119,3.710690831202167e-34
+gpt,base,r,data_visualization,02_distribution_boxplot,464.26113022386943,3.710690831202167e-34
+gpt,base,r,data_manipulation_preprocessing,02_merge_aggregate_reshape,424.2802138531325,3.710690831202167e-34
+gpt,base,r,data_manipulation_preprocessing,01_impute_encode_scale,423.4022029307922,3.710690831202167e-34
+gpt,optimized,r,data_manipulation_preprocessing,01_impute_encode_scale,393.0617753189595,3.710690831202167e-34
+gpt,optimized,r,data_manipulation_preprocessing,02_merge_aggregate_reshape,379.0880539067092,3.710690831202167e-34
+gpt,optimized,r,statistical_modelling_analysis,01_linear_regression_inference,349.6366916218101,3.710690831202167e-34
+gpt,base,r,statistical_modelling_analysis,02_logistic_regression_odds_ratios,348.65952817255186,3.710690831202167e-34

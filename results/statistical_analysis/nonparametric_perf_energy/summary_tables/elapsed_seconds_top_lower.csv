@@ -1,0 +1,11 @@
+model,prompt_type,language,category,snippet,elapsed_seconds_mean_pct_diff_vs_original,elapsed_seconds_p_value_fdr_bh
+llama,optimized,python,data_manipulation_preprocessing,02_merge_aggregate_reshape,-72.0371081970344,3.710690831202167e-34
+gemini,base,python,data_manipulation_preprocessing,02_merge_aggregate_reshape,-72.01246558023469,3.710690831202167e-34
+gpt,optimized,python,data_manipulation_preprocessing,02_merge_aggregate_reshape,-71.98362177045706,3.710690831202167e-34
+gpt,base,python,data_manipulation_preprocessing,02_merge_aggregate_reshape,-71.90290775293715,3.710690831202167e-34
+gemini,optimized,python,data_manipulation_preprocessing,01_impute_encode_scale,-70.56046891228142,3.710690831202167e-34
+gpt,optimized,python,data_manipulation_preprocessing,01_impute_encode_scale,-70.54552750001865,3.710690831202167e-34
+gemini,base,python,data_manipulation_preprocessing,01_impute_encode_scale,-70.5243635202262,3.710690831202167e-34
+gpt,optimized,python,data_visualization,01_scatter_trend_grouped,-59.20500015126314,3.710690831202167e-34
+gemini,optimized,python,data_visualization,01_scatter_trend_grouped,-59.19488546947485,3.710690831202167e-34
+starcoder,base,python,data_visualization,02_distribution_boxplot,-50.51423482297306,3.710690831202167e-34

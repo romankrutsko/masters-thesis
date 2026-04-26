@@ -1,0 +1,3 @@
+metric,n_candidates,lower_than_original,higher_than_original,significant_lower,significant_higher,nonsignificant,median_pct_diff,median_abs_pct_diff
+elapsed_seconds,84,46,38,46,36,2,-0.3023964984163229,16.070344924809064
+energy_joules,84,53,31,49,25,10,-1.2809009164834833,17.051485996604306
