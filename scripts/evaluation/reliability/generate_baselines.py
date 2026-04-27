@@ -11,7 +11,7 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 TASK_EQ_ROOT = REPO_ROOT / "task_equivalents"
 PY_ROOT = TASK_EQ_ROOT / "python"
 R_ROOT = TASK_EQ_ROOT / "r"

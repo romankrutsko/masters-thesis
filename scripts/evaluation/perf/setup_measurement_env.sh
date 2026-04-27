@@ -7,9 +7,9 @@ readonly SCRIPT_NAME="$(basename "$0")"
 usage() {
   cat <<'EOF'
 Usage:
-  scripts/setup_measurement_env.sh setup [--pin-cpu N] [--offline-cpu N]...
-  scripts/setup_measurement_env.sh restore [--online-cpu N]...
-  scripts/setup_measurement_env.sh status
+  scripts/evaluation/perf/setup_measurement_env.sh setup [--pin-cpu N] [--offline-cpu N]...
+  scripts/evaluation/perf/setup_measurement_env.sh restore [--online-cpu N]...
+  scripts/evaluation/perf/setup_measurement_env.sh status
 
 Commands:
   setup
@@ -37,9 +37,9 @@ Options:
   -h, --help        Show this help text.
 
 Examples:
-  scripts/setup_measurement_env.sh status
-  scripts/setup_measurement_env.sh setup --pin-cpu 2 --offline-cpu 10
-  scripts/setup_measurement_env.sh restore --online-cpu 10
+  scripts/evaluation/perf/setup_measurement_env.sh status
+  scripts/evaluation/perf/setup_measurement_env.sh setup --pin-cpu 2 --offline-cpu 10
+  scripts/evaluation/perf/setup_measurement_env.sh restore --online-cpu 10
 EOF
 }
 
@@ -205,7 +205,7 @@ do_setup() {
   echo
   if [[ -n "$pin_cpu" ]]; then
     echo "Recommended benchmark command:"
-    echo "taskset -c ${pin_cpu} python scripts/measure_perf_energy.py --runs 100 --warmup-runs 1 --pause-seconds 60 --timeout 120 --output-dir results/perf_energy_runs/run_100x_60s_pinned_cpu${pin_cpu}"
+    echo "taskset -c ${pin_cpu} python scripts/evaluation/perf/measure_perf_energy.py --runs 100 --warmup-runs 1 --pause-seconds 60 --timeout 120 --output-dir results/perf_energy_runs/run_100x_60s_pinned_cpu${pin_cpu}"
   else
     echo "No --pin-cpu value was provided. Use lscpu output from 'status' to pick a logical CPU."
   fi

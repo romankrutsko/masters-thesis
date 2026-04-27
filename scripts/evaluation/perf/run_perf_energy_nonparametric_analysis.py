@@ -11,7 +11,7 @@ import pandas as pd
 from scipy import stats
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 ORIGINAL_CSV = ROOT / "results/perf_energy_runs/original_100x_60s_cpu2/perf_energy_runs.csv"
 TRANSLATIONS_CSV = ROOT / "results/perf_energy_runs/run_100x_60s_cpu2/perf_energy_runs.csv"
 OUTPUT_DIR = ROOT / "results/statistical_analysis/nonparametric_perf_energy"

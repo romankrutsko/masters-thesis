@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 INPUT_CSV = ROOT / "results/statistical_analysis/nonparametric_perf_energy/mann_whitney_vs_original.csv"
 OUTPUT_DIR = ROOT / "results/statistical_analysis/nonparametric_perf_energy/summary_tables"
 

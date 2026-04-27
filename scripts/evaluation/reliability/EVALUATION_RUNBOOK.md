@@ -1,13 +1,13 @@
 # Translation Evaluation Runbook
 
-This project includes `task_equivalents/tests/run_translation_evaluation.py` to run:
+This project includes `scripts/evaluation/reliability/run_translation_evaluation.py` to run:
 - Execution-based reliability checks for all translated snippets, scored `0.0` to `1.0` (default one decimal).
 - Static analysis in SonarQube for Python and R slices.
 
 ## 1) Start SonarQube (Docker)
 
 ```bash
-cd task_equivalents/tests
+cd scripts/evaluation/reliability
 docker compose -f docker-compose.sonarqube.yml up -d
 ```
 
@@ -26,7 +26,7 @@ export SONAR_HOST_URL="http://localhost:9000"
 
 ```bash
 cd /Users/romankrutsko/PycharmProjects/MastersThesis
-.venv/bin/python task_equivalents/tests/run_translation_evaluation.py --mode all
+.venv/bin/python scripts/evaluation/reliability/run_translation_evaluation.py --mode all
 ```
 
 ## 4) Outputs
@@ -48,7 +48,7 @@ Key files:
 Run a subset:
 
 ```bash
-.venv/bin/python task_equivalents/tests/run_translation_evaluation.py \
+.venv/bin/python scripts/evaluation/reliability/run_translation_evaluation.py \
   --mode all \
   --models starcoder,gpt \
   --prompt-types base,optimized \
@@ -58,12 +58,12 @@ Run a subset:
 Blacklist failing or expensive candidates:
 
 ```bash
-.venv/bin/python task_equivalents/tests/run_translation_evaluation.py \
+.venv/bin/python scripts/evaluation/reliability/run_translation_evaluation.py \
   --mode all \
-  --blacklist-file task_equivalents/tests/evaluation_blacklist.txt
+  --blacklist-file scripts/evaluation/reliability/evaluation_blacklist.txt
 ```
 
-The blacklist file uses one repo-relative candidate path per line. By default, the evaluator reads `task_equivalents/tests/evaluation_blacklist.txt`.
+The blacklist file uses one repo-relative candidate path per line. By default, the evaluator reads `scripts/evaluation/reliability/evaluation_blacklist.txt`.
 
 ## Notes
 

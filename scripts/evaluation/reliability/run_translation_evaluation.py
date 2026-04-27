@@ -18,7 +18,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 TASK_EQ_ROOT = REPO_ROOT / "task_equivalents"
 LLM_ROOT = TASK_EQ_ROOT / "llm_translations"
 REF_ROOTS = {
@@ -26,7 +26,7 @@ REF_ROOTS = {
     "r": TASK_EQ_ROOT / "r",
 }
 DEFAULT_OUTPUT_ROOT = TASK_EQ_ROOT / "evaluation_outputs"
-DEFAULT_BLACKLIST_FILE = TASK_EQ_ROOT / "tests" / "evaluation_blacklist.txt"
+DEFAULT_BLACKLIST_FILE = REPO_ROOT / "scripts" / "evaluation" / "reliability" / "evaluation_blacklist.txt"
 
 BASE_WEIGHTS = {
     "kinds": 0.25,
@@ -343,7 +343,7 @@ def evaluate_execution(
     score_decimals: int,
     output_dir: Path,
 ) -> dict[str, Any]:
-    gb = load_module(TASK_EQ_ROOT / "tests" / "generate_baselines.py", "generate_baselines")
+    gb = load_module(REPO_ROOT / "scripts" / "evaluation" / "reliability" / "generate_baselines.py", "generate_baselines")
 
     rows: list[dict[str, Any]] = []
     per_slice_scores: dict[tuple[str, str, str], list[float]] = defaultdict(list)

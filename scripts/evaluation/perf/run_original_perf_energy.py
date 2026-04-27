@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Stage the original task scripts under a repo-local benchmark layout and then
-invoke scripts/measure_perf_energy.py unchanged.
+invoke scripts/evaluation/perf/measure_perf_energy.py unchanged.
 
 This avoids the original script's assumption that discovered files live under
 the repository root while still benchmarking the original implementations.
@@ -15,7 +15,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_STAGE_DIR = REPO_ROOT / ".tmp" / "perf_energy_original_layout"
 PYTHON_SOURCE_DIR = REPO_ROOT / "task_equivalents" / "python"
 R_SOURCE_DIR = REPO_ROOT / "task_equivalents" / "r"
@@ -82,7 +82,7 @@ def validate_forwarded_args(forwarded_args: list[str]) -> None:
 def run_benchmark(stage_dir: Path, forwarded_args: list[str]) -> int:
     command = [
         sys.executable,
-        str(REPO_ROOT / "scripts" / "measure_perf_energy.py"),
+        str(REPO_ROOT / "scripts" / "evaluation" / "perf" / "measure_perf_energy.py"),
         "--base-dir",
         str(stage_dir),
         *forwarded_args,

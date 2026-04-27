@@ -8,7 +8,7 @@ an idealized machine state, but to reduce uncontrolled variance while preserving
 a reproducible execution environment for the translated Python and R scripts in
 this repository.
 
-The repository runner is `scripts/measure_perf_energy.py`. It measures each
+The repository runner is `scripts/evaluation/perf/measure_perf_energy.py`. It measures each
 execution with `perf stat -e power/energy-pkg/` and records runtime, package
 energy, and average power. The runner now checkpoints progress during execution:
 
@@ -231,7 +231,7 @@ lscpu -e=CPU,CORE,SOCKET,NODE,ONLINE
 Then choose one CPU or one set of physical cores. Example using CPU 2:
 
 ```bash
-taskset -c 2 .venv/bin/python scripts/measure_perf_energy.py --runs 100 --warmup-runs 1 --pause-seconds 60
+taskset -c 2 .venv/bin/python scripts/evaluation/perf/measure_perf_energy.py --runs 100 --warmup-runs 1 --pause-seconds 60
 ```
 
 If SMT/Hyper-Threading siblings are visible, prefer selecting one logical CPU
@@ -309,7 +309,7 @@ export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 export VECLIB_MAXIMUM_THREADS=1
 export BLIS_NUM_THREADS=1
-taskset -c 2 python scripts/measure_perf_energy.py \
+taskset -c 2 python scripts/evaluation/perf/measure_perf_energy.py \
   --runs 100 \
   --warmup-runs 1 \
   --pause-seconds 60 \
