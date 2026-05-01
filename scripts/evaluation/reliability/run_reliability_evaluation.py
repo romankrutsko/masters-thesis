@@ -13,12 +13,12 @@ from pathlib import Path
 from typing import Any
 
 THIS_DIR = Path(__file__).resolve().parent
-EVALUATION_DIR = THIS_DIR.parent
-HELPER_DIR = EVALUATION_DIR / "helpers"
-if str(HELPER_DIR) not in sys.path:
-    sys.path.insert(0, str(HELPER_DIR))
+# Direct script execution puts this subdirectory on sys.path, so add repo root for package imports.
+REPO_IMPORT_ROOT = THIS_DIR.parents[2]
+if str(REPO_IMPORT_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_IMPORT_ROOT))
 
-from evaluation_common import (
+from scripts.evaluation.helpers.evaluation_common import (
     DEFAULT_BLACKLIST_FILE,
     DEFAULT_OUTPUT_ROOT,
     REF_ROOTS,
@@ -34,18 +34,20 @@ from evaluation_common import (
     to_rel,
 )
 
-# Component weights for the reliability score.
-#
-# The evaluator compares a translated script to the original by first reducing
-# each execution to an object summary, then scoring overlap in these components:
-# - kinds: object categories created by the script, e.g. table/vector/model.
-# - shapes: row/column dimensions of table-like or matrix-like objects.
-# - vectors: lengths of one-dimensional vector/series objects.
-# - models: rough sizes of fitted model objects, e.g. number of params/coefs.
-# - numeric: rounded numeric summaries such as means, sums, minima, maxima.
-#
-# The final score is a weighted average over the components that exist in the
-# original/reference execution. Empty reference components are ignored.
+"""
+Component weights for the reliability score.
+
+The evaluator compares a translated script to the original by first reducing
+each execution to an object summary, then scoring overlap in these components:
+- kinds: object categories created by the script, e.g. table/vector/model.
+- shapes: row/column dimensions of table-like or matrix-like objects.
+- vectors: lengths of one-dimensional vector/series objects.
+- models: rough sizes of fitted model objects, e.g. number of params/coefs.
+- numeric: rounded numeric summaries such as means, sums, minima, maxima.
+
+The final score is a weighted average over the components that exist in the
+original/reference execution. Empty reference components are ignored.
+"""
 BASE_WEIGHTS = {
     "kinds": 0.25,
     "shapes": 0.25,

@@ -20,11 +20,12 @@ from urllib.request import Request, urlopen
 
 THIS_DIR = Path(__file__).resolve().parent
 EVALUATION_DIR = THIS_DIR.parent
-HELPER_DIR = EVALUATION_DIR / "helpers"
-if str(HELPER_DIR) not in sys.path:
-    sys.path.insert(0, str(HELPER_DIR))
+# Direct script execution puts this subdirectory on sys.path, so add repo root for package imports.
+REPO_IMPORT_ROOT = THIS_DIR.parents[2]
+if str(REPO_IMPORT_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_IMPORT_ROOT))
 
-from evaluation_common import (
+from scripts.evaluation.helpers.evaluation_common import (
     DEFAULT_BLACKLIST_FILE,
     DEFAULT_OUTPUT_ROOT,
     REPO_ROOT,
