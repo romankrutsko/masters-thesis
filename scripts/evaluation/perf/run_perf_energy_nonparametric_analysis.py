@@ -12,11 +12,13 @@ from scipy import stats
 
 
 ROOT = Path(__file__).resolve().parents[3]
-ORIGINAL_CSV = ROOT / "results/perf_energy_runs/original_100x_60s_cpu2/perf_energy_runs.csv"
-TRANSLATIONS_CSV = ROOT / "results/perf_energy_runs/run_100x_60s_cpu2/perf_energy_runs.csv"
+ORIGINAL_CSV = ROOT / "results/perf_energy_runs/original_30x_60s_cpu2/perf_energy_runs.csv"
+TRANSLATIONS_CSV = ROOT / "results/perf_energy_runs/run_30x_60s_cpu2/perf_energy_runs.csv"
 OUTPUT_DIR = ROOT / "results/statistical_analysis/nonparametric_perf_energy"
 
+# These columns identify the original task that a translation should be compared with.
 MATCH_KEYS = ["language", "category", "snippet"]
+# These columns identify one translated candidate implementation.
 GROUP_KEYS = ["model", "prompt_type", "language", "category", "snippet"]
 METRICS = ["elapsed_seconds", "energy_joules", "avg_power_watts"]
 
@@ -28,6 +30,7 @@ class SpearmanGroup:
 
 
 def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
+    # Only successful benchmark rows are valid inputs for statistical comparison.
     original = pd.read_csv(ORIGINAL_CSV)
     translations = pd.read_csv(TRANSLATIONS_CSV)
 
@@ -42,16 +45,18 @@ def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
 def rank_biserial_from_u(u_stat: float, n1: int, n2: int) -> float:
+    # Convert Mann-Whitney U into an effect size in the [-1, 1] range.
     return (2.0 * u_stat) / (n1 * n2) - 1.0
 
 
 def cliffs_delta(x: np.ndarray, y: np.ndarray) -> float:
-    # With n=100 per group, the O(n*m) comparison is still trivial.
+    # With n=30 per group, the O(n*m) comparison is still trivial.
     diffs = np.subtract.outer(x, y)
     return (np.sum(diffs > 0) - np.sum(diffs < 0)) / (x.size * y.size)
 
 
 def benjamini_hochberg(p_values: pd.Series) -> pd.Series:
+    # FDR correction controls false discoveries across many candidate tests.
     p = p_values.to_numpy(dtype=float)
     n = len(p)
     order = np.argsort(p)
@@ -69,6 +74,7 @@ def benjamini_hochberg(p_values: pd.Series) -> pd.Series:
 
 
 def run_mann_whitney(original: pd.DataFrame, translations: pd.DataFrame) -> pd.DataFrame:
+    # Compare each translated candidate against the original script for the same task.
     original_groups = {
         key: group.sort_values("run_id").reset_index(drop=True)
         for key, group in original.groupby(MATCH_KEYS)
@@ -124,6 +130,7 @@ def run_mann_whitney(original: pd.DataFrame, translations: pd.DataFrame) -> pd.D
 
 
 def spearman_table(df: pd.DataFrame, group_name: str, group_cols: list[str]) -> pd.DataFrame:
+    # Summarize whether elapsed time and energy move together within each grouping.
     rows: list[dict[str, object]] = []
     for key, group in df.groupby(group_cols):
         if not isinstance(key, tuple):
@@ -143,6 +150,7 @@ def spearman_table(df: pd.DataFrame, group_name: str, group_cols: list[str]) -> 
 
 
 def run_spearman(original: pd.DataFrame, translations: pd.DataFrame) -> pd.DataFrame:
+    # Combine originals and translations so the correlation is reported at several granularities.
     combined = pd.concat([original, translations], ignore_index=True)
     combined["dataset"] = np.where(combined["model"].eq("original"), "original", "translation")
 
@@ -159,6 +167,7 @@ def run_spearman(original: pd.DataFrame, translations: pd.DataFrame) -> pd.DataF
 
 
 def build_summary(mw: pd.DataFrame, sp: pd.DataFrame) -> dict[str, object]:
+    # Keep a compact JSON overview for thesis tables and quick sanity checks.
     summary: dict[str, object] = {
         "mann_whitney_candidate_count": int(len(mw)),
         "spearman_group_count": int(len(sp)),

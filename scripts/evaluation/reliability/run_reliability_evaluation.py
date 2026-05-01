@@ -395,7 +395,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--atol", type=float, default=1e-3)
     parser.add_argument("--rtol", type=float, default=1e-3)
     parser.add_argument("--score-decimals", type=int, default=1)
-    parser.add_argument("--execution-timeout", type=float, default=120.0)
+    parser.add_argument("--execution-timeout", type=float, default=120.0, help="Per-script timeout in seconds. Use 0 for no timeout.")
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--run-id", default="")
     parser.add_argument("--models", default="")
@@ -406,6 +406,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def run(args: argparse.Namespace) -> int:
+    execution_timeout = None if args.execution_timeout <= 0 else args.execution_timeout
+
     candidates = discover_candidates(LLM_ROOT)
     candidates, blacklist_entries, blacklisted_candidates = filter_candidates(
         candidates,
@@ -433,7 +435,7 @@ def run(args: argparse.Namespace) -> int:
         candidates,
         python_bin=args.python_bin,
         rscript_bin=args.rscript_bin,
-        execution_timeout=args.execution_timeout,
+        execution_timeout=execution_timeout,
         digits=args.digits,
         atol=args.atol,
         rtol=args.rtol,

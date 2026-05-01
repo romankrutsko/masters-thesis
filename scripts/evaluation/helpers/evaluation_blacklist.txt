@@ -64,8 +64,5 @@ task_equivalents/llm_translations/starcoder/optimized/python/data_visualization/
 # Failed because of NameError: name 'sm' is not defined
 task_equivalents/llm_translations/starcoder/optimized/python/statistical_modelling_analysis/01_linear_regression_inference.py
 
-# Failed because of long runtime (~19 min).
+# Passes, but excluded because of long runtime (~19 min).
 task_equivalents/llm_translations/starcoder/base/r/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.R
-
-# Failed because of likely timeout/iteration stall.
-# task_equivalents/llm_translations/gpt/optimized/r/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.R

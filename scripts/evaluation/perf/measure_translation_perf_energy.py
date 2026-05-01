@@ -50,7 +50,6 @@ STDERR_EXCERPT_LIMIT = 400
 @dataclass(frozen=True)
 class CandidateScript:
     script_id: str
-    implementation_type: str
     model: str
     prompt_type: str
     language: str
@@ -126,8 +125,10 @@ def load_blacklist(path: Path | None) -> set[str]:
 
 
 def discover_scripts(base_dir: Path, blacklist_entries: set[str]) -> tuple[list[CandidateScript], int]:
+    # IDs are assigned before blacklist filtering so they stay stable across benchmark runs.
     out: list[CandidateScript] = []
     skipped = 0
+    canonical_index = 0
 
     for path in sorted(base_dir.rglob("*")):
         if not path.is_file() or path.suffix.lower() not in {".py", ".r"}:
@@ -148,6 +149,9 @@ def discover_scripts(base_dir: Path, blacklist_entries: set[str]) -> tuple[list[
         if language not in {"python", "r"}:
             continue
 
+        canonical_index += 1
+        script_id = f"script_{canonical_index}"
+
         repo_rel = str(path.relative_to(REPO_ROOT))
         abs_path = str(path.resolve())
         if repo_rel in blacklist_entries or abs_path in blacklist_entries:
@@ -156,8 +160,7 @@ def discover_scripts(base_dir: Path, blacklist_entries: set[str]) -> tuple[list[
 
         out.append(
             CandidateScript(
-                script_id=f"script_{len(out) + 1}",
-                implementation_type="candidate",
+                script_id=script_id,
                 model=model,
                 prompt_type=prompt_type,
                 language=language,
@@ -299,7 +302,6 @@ def ensure_parent_dir(path: Path) -> None:
 def csv_fieldnames() -> list[str]:
     return [
         "script_id",
-        "implementation_type",
         "model",
         "prompt_type",
         "language",
@@ -337,7 +339,6 @@ def write_json_atomic(path: Path, payload: dict[str, object]) -> None:
 def make_csv_row(candidate: CandidateScript, run_id: int, result: RunResult) -> dict[str, object]:
     return {
         "script_id": candidate.script_id,
-        "implementation_type": candidate.implementation_type,
         "model": candidate.model,
         "prompt_type": candidate.prompt_type,
         "language": candidate.language,
@@ -367,7 +368,7 @@ def validate_args(args: argparse.Namespace) -> None:
 
 
 def reset_between_scripts(*, drop_caches: bool, pause_seconds: float) -> None:
-    # This is a best-effort reset of OS file caches; CPU caches and thermal state cannot be fully reset here.
+    # CPU caches and thermal state cannot be fully reset here.
     if drop_caches:
         subprocess.run(["sync"], cwd=REPO_ROOT, check=False)
         drop_caches_path = Path("/proc/sys/vm/drop_caches")
@@ -469,6 +470,7 @@ def run_benchmark(args: argparse.Namespace) -> int:
     if not base_dir.exists():
         raise SystemExit(f"Base directory does not exist: {base_dir}")
 
+    # Discovery assigns stable script IDs before the execution order is randomized.
     blacklist_entries = load_blacklist(Path(args.blacklist_file).resolve() if args.blacklist_file else None)
     discovered_scripts, blacklist_skipped = discover_scripts(base_dir, blacklist_entries)
     scripts = order_scripts(
@@ -486,6 +488,7 @@ def run_benchmark(args: argparse.Namespace) -> int:
     total_scripts = len(scripts)
 
     def checkpoint(*, completed_scripts: int, status: str, current_script: str) -> None:
+        # Write progress after each script so an interrupted benchmark still has a useful manifest.
         payload = summary_payload(
             args=args,
             run_dir=run_dir,
@@ -523,11 +526,13 @@ def run_benchmark(args: argparse.Namespace) -> int:
             command = build_interpreter_command(candidate.script_path)
 
             for warmup_index in range(1, args.warmup_runs + 1):
+                # Warm-up runs are intentionally not written to CSV because they are not analysis samples.
                 print(f"  warm-up {warmup_index}/{args.warmup_runs} ...", flush=True)
                 warmup_result = execute_with_perf(command, timeout_seconds=args.timeout)
                 print(f"    -> {warmup_result.status}", flush=True)
 
             for measured_index in range(1, args.runs + 1):
+                # Each measured run becomes one CSV row, whether it succeeds or fails.
                 total_attempted_runs += 1
                 print(f"  measured {measured_index}/{args.runs} ...", flush=True)
                 result = execute_with_perf(command, timeout_seconds=args.timeout)
@@ -548,18 +553,22 @@ def run_benchmark(args: argparse.Namespace) -> int:
                 write_csv_row(writer, row, handle)
 
                 if measured_index < args.runs and args.pause_between_runs > 0:
+                    # Short intra-script pause reduces immediate back-to-back run interference.
                     print(f"    sleeping {args.pause_between_runs:.1f}s before next measured run", flush=True)
                     time.sleep(args.pause_between_runs)
 
+            # Force the completed script's rows to disk before moving to the next script.
             sync_file(handle)
             checkpoint(completed_scripts=script_index, status="running", current_script=script_label)
 
             if script_index < total_scripts:
+                # Between scripts, reduce OS cache carryover before the cooldown pause.
                 reset_between_scripts(
                     drop_caches=not args.no_drop_caches_between_scripts,
                     pause_seconds=args.pause_seconds,
                 )
 
+    # Mark the run as completed after the CSV file has been closed cleanly.
     summary = summary_payload(
         args=args,
         run_dir=run_dir,
