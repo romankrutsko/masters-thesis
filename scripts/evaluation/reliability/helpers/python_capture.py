@@ -16,6 +16,7 @@ import pandas as pd
 
 
 def r6(v):
+    # Keep numeric summaries stable across languages and library versions.
     if isinstance(v, (float, np.floating)):
         if math.isnan(float(v)) or math.isinf(float(v)):
             return None
@@ -36,6 +37,7 @@ def summarize_scalar(v):
 
 
 def summarize_value(v):
+    # Convert runtime objects into small JSON-safe summaries for comparison.
     if isinstance(v, pd.DataFrame):
         out = {
             "type": "DataFrame",
@@ -93,6 +95,7 @@ def summarize_value(v):
     if isinstance(v, (int, float, str, bool, np.integer, np.floating, np.bool_)):
         return {"type": "scalar", "value": summarize_scalar(v)}
 
+    # statsmodels-style fitted results expose model parameters here.
     if hasattr(v, "params"):
         try:
             params = np.asarray(v.params, dtype=float).ravel().tolist()
@@ -100,6 +103,7 @@ def summarize_value(v):
         except Exception:
             pass
 
+    # sklearn estimators expose learned state through trailing-underscore attrs.
     model_bits = {}
     for attr in ["coef_", "intercept_", "feature_importances_", "best_score_", "best_params_", "alpha_", "C"]:
         if not hasattr(v, attr):
@@ -131,6 +135,7 @@ def summarize_value(v):
 
 
 def sanitize(x):
+    # json.dumps cannot serialize numpy scalar types directly.
     if isinstance(x, dict):
         return {str(k): sanitize(v) for k, v in x.items()}
     if isinstance(x, list):
@@ -151,6 +156,7 @@ def main() -> int:
     script_path = Path(os.environ["BASELINE_SCRIPT"])
     os.chdir(repo_root)
 
+    # Capture script prints separately from the JSON emitted by this helper.
     buffer = io.StringIO()
     with contextlib.redirect_stdout(buffer):
         # Match `python script.py`: run guarded main blocks and expose a normal argv.
@@ -162,6 +168,7 @@ def main() -> int:
             sys.argv = old_argv
     stdout = buffer.getvalue()
 
+    # Summarize only user-created globals, skipping modules/functions/imports.
     var_summary = {}
     for key in sorted(ns.keys()):
         if key.startswith("__"):
