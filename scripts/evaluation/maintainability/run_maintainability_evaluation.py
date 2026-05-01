@@ -19,8 +19,10 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 THIS_DIR = Path(__file__).resolve().parent
-if str(THIS_DIR) not in sys.path:
-    sys.path.insert(0, str(THIS_DIR))
+EVALUATION_DIR = THIS_DIR.parent
+HELPER_DIR = EVALUATION_DIR / "helpers"
+if str(HELPER_DIR) not in sys.path:
+    sys.path.insert(0, str(HELPER_DIR))
 
 from evaluation_common import (
     DEFAULT_BLACKLIST_FILE,
@@ -36,6 +38,8 @@ from evaluation_common import (
     to_rel,
     write_run_manifest,
 )
+
+LINTR_TO_SONAR_HELPER = EVALUATION_DIR / "helpers" / "lintr_to_sonar.R"
 
 
 def sanitize_key(s: str) -> str:
@@ -79,96 +83,11 @@ def poll_sonar_analysis(sonar_host_url: str, ce_task_id: str, token: str | None,
 
 
 def generate_lintr_external_issues(slice_root: Path, out_json: Path, rscript_bin: str, repo_root: Path) -> tuple[bool, str]:
-    script = r"""
-args <- commandArgs(trailingOnly=TRUE)
-slice_root <- normalizePath(args[[1]], winslash='/', mustWork=TRUE)
-out_json <- args[[2]]
-repo_root <- normalizePath(args[[3]], winslash='/', mustWork=TRUE)
-
-if (!requireNamespace('lintr', quietly=TRUE)) {
-  stop("Package 'lintr' is required.")
-}
-if (!requireNamespace('jsonlite', quietly=TRUE)) {
-  stop("Package 'jsonlite' is required.")
-}
-
-resolve_issue_path <- function(path) {
-  if (grepl("^(/|[A-Za-z]:[/\\\\])", path)) {
-    path
-  } else {
-    file.path(slice_root, path)
-  }
-}
-
-to_slice_rel <- function(path) {
-  p <- normalizePath(path, winslash='/', mustWork=FALSE)
-  if (startsWith(p, slice_root)) {
-    sub(paste0('^', slice_root, '/?'), '', p)
-  } else {
-    p
-  }
-}
-
-linters <- lintr::lint_dir(slice_root)
-issues <- list()
-# Convert lintr findings into Sonar external-issue format so R can share the
-# same reporting pipeline as Python.
-line_cache <- new.env(parent = emptyenv())
-for (i in seq_along(linters)) {
-  l <- linters[[i]]
-  source_path <- resolve_issue_path(l$filename)
-  filename <- to_slice_rel(source_path)
-  line <- ifelse(is.null(l$line_number) || is.na(l$line_number), 1L, as.integer(l$line_number))
-  col <- ifelse(is.null(l$column_number) || is.na(l$column_number), 1L, as.integer(l$column_number))
-
-  if (!exists(filename, envir = line_cache, inherits = FALSE)) {
-    file_lines <- tryCatch(readLines(source_path, warn = FALSE), error = function(e) character())
-    assign(filename, file_lines, envir = line_cache)
-  }
-  file_lines <- get(filename, envir = line_cache, inherits = FALSE)
-  line_count <- length(file_lines)
-  if (line_count <= 0L) {
-    line <- 1L
-    text_range <- NULL
-  } else {
-    line <- max(1L, min(line, line_count))
-    line_text <- file_lines[[line]]
-    line_width <- nchar(line_text, type = 'chars', allowNA = FALSE, keepNA = FALSE)
-
-    if (line_width <= 0L) {
-      text_range <- NULL
-    } else {
-      start_offset <- max(0L, col - 1L)
-      start_offset <- min(start_offset, line_width - 1L)
-      end_offset <- min(line_width, start_offset + 1L)
-
-      text_range <- list(
-        startLine = line,
-        endLine = line,
-        startColumn = start_offset,
-        endColumn = end_offset
-      )
-    }
-  }
-
-  issues[[length(issues) + 1]] <- list(
-    engineId = 'lintr',
-    ruleId = as.character(l$linter),
-    severity = 'MINOR',
-    type = 'CODE_SMELL',
-    primaryLocation = list(
-      message = as.character(l$message),
-      filePath = filename,
-      textRange = text_range
-    )
-  )
-}
-
-payload <- list(issues = issues)
-jsonlite::write_json(payload, path = out_json, auto_unbox = TRUE, pretty = TRUE)
-"""
-
-    proc = subprocess.run([rscript_bin, "-e", script, str(slice_root), str(out_json), str(repo_root)], capture_output=True, text=True, check=False)
+    env = os.environ.copy()
+    env["LINTR_SLICE_ROOT"] = str(slice_root)
+    env["LINTR_OUT_JSON"] = str(out_json)
+    env["LINTR_REPO_ROOT"] = str(repo_root)
+    proc = subprocess.run([rscript_bin, str(LINTR_TO_SONAR_HELPER)], capture_output=True, text=True, check=False, env=env)
     if proc.returncode == 0:
         return True, ""
     return False, (proc.stderr or proc.stdout or "lintr failed").strip()

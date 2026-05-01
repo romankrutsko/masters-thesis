@@ -4,15 +4,12 @@ This project now separates the two evaluation concerns:
 
 - `scripts/evaluation/reliability/run_reliability_evaluation.py`
   - execution-based reliability checks for translated snippets
-- `scripts/evaluation/reliability/run_maintainability_evaluation.py`
+- `scripts/evaluation/maintainability/run_maintainability_evaluation.py`
   - SonarQube-based maintainability checks for Python and R slices
-- `scripts/evaluation/reliability/run_translation_evaluation.py`
-  - compatibility wrapper that can still run both from one command
-
 ## 1) Start SonarQube (Docker)
 
 ```bash
-cd scripts/evaluation/reliability
+cd scripts/evaluation/maintainability
 docker compose -f docker-compose.sonarqube.yml up -d
 ```
 
@@ -37,18 +34,10 @@ cd /Users/romankrutsko/PycharmProjects/MastersThesis
 ## 4) Run Maintainability Checks
 
 ```bash
-.venv/bin/python scripts/evaluation/reliability/run_maintainability_evaluation.py
+.venv/bin/python scripts/evaluation/maintainability/run_maintainability_evaluation.py
 ```
 
-## 5) Optional Compatibility Wrapper
-
-If you still want the old single entry point:
-
-```bash
-.venv/bin/python scripts/evaluation/reliability/run_translation_evaluation.py --mode all
-```
-
-## 6) Outputs
+## 5) Outputs
 
 Outputs are written to:
 
@@ -111,10 +100,10 @@ Blacklist failing or expensive candidates:
 
 ```bash
 .venv/bin/python scripts/evaluation/reliability/run_reliability_evaluation.py \
-  --blacklist-file scripts/evaluation/reliability/evaluation_blacklist.txt
+  --blacklist-file scripts/evaluation/helpers/evaluation_blacklist.txt
 ```
 
-The blacklist file uses one repo-relative candidate path per line. By default, the evaluator reads `scripts/evaluation/reliability/evaluation_blacklist.txt`.
+The blacklist file uses one repo-relative candidate path per line. By default, the evaluator reads `scripts/evaluation/helpers/evaluation_blacklist.txt`.
 
 ## Notes
 

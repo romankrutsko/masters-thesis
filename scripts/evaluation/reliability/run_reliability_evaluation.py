@@ -13,8 +13,10 @@ from pathlib import Path
 from typing import Any
 
 THIS_DIR = Path(__file__).resolve().parent
-if str(THIS_DIR) not in sys.path:
-    sys.path.insert(0, str(THIS_DIR))
+EVALUATION_DIR = THIS_DIR.parent
+HELPER_DIR = EVALUATION_DIR / "helpers"
+if str(HELPER_DIR) not in sys.path:
+    sys.path.insert(0, str(HELPER_DIR))
 
 from evaluation_common import (
     DEFAULT_BLACKLIST_FILE,
@@ -255,7 +257,7 @@ def evaluate_execution(
     score_decimals: int,
     output_dir: Path,
 ) -> dict[str, Any]:
-    gb = load_module(REPO_ROOT / "scripts" / "evaluation" / "reliability" / "generate_baselines.py", "generate_baselines")
+    gb = load_module(THIS_DIR / "generate_baselines.py", "generate_baselines")
 
     rows: list[dict[str, Any]] = []
     per_slice_scores: dict[tuple[str, str, str], list[float]] = defaultdict(list)

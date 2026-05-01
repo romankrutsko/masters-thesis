@@ -39,7 +39,7 @@ from typing import Sequence
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_BASE_DIR = REPO_ROOT / "task_equivalents" / "llm_translations"
 DEFAULT_RESULTS_ROOT = REPO_ROOT / "results" / "perf_energy_runs"
-DEFAULT_BLACKLIST = REPO_ROOT / "scripts" / "evaluation" / "reliability" / "evaluation_blacklist.txt"
+DEFAULT_BLACKLIST = REPO_ROOT / "scripts" / "evaluation" / "helpers" / "evaluation_blacklist.txt"
 
 PERF_ELAPSED_RE = re.compile(r"([0-9][0-9,]*(?:\.[0-9]+)?)\s+seconds\s+time\s+elapsed")
 PERF_ENERGY_RE = re.compile(r"([0-9][0-9,]*(?:\.[0-9]+)?)\s+Joules\s+power/energy-pkg/")

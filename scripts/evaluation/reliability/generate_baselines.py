@@ -15,7 +15,7 @@ TASK_EQ_ROOT = REPO_ROOT / "task_equivalents"
 PY_ROOT = TASK_EQ_ROOT / "python"
 R_ROOT = TASK_EQ_ROOT / "r"
 OUT_DIR = TASK_EQ_ROOT / "baselines"
-HELPER_DIR = Path(__file__).resolve().parent / "helpers"
+HELPER_DIR = Path(__file__).resolve().parent.parent / "helpers"
 PYTHON_CAPTURE_HELPER = HELPER_DIR / "python_capture.py"
 R_CAPTURE_HELPER = HELPER_DIR / "r_capture.R"
 
@@ -57,8 +57,7 @@ def baseline_env(script_path: Path) -> dict[str, str]:
 
 
 def run_python_baseline(script_path: Path, python_bin: str, timeout_sec: float | None = None) -> dict:
-    # Run the target in a clean helper process so crashes, imports, and globals
-    # from one candidate cannot leak into the evaluator or the next candidate.
+    # Run the target in a clean helper process so crashes, imports, and globals from one candidate cannot leak into the evaluator or the next candidate.
     env = baseline_env(script_path)
     env["MPLBACKEND"] = "Agg"
     env["MPLCONFIGDIR"] = "/tmp/mplcfg"
