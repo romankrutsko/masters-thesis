@@ -68,4 +68,4 @@ task_equivalents/llm_translations/starcoder/optimized/python/statistical_modelli
 task_equivalents/llm_translations/starcoder/base/r/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.R
 
 # Failed because of likely timeout/iteration stall.
-task_equivalents/llm_translations/gpt/optimized/r/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.R
+# task_equivalents/llm_translations/gpt/optimized/r/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.R
