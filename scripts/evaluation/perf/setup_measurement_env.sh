@@ -4,6 +4,7 @@ set -euo pipefail
 
 readonly SCRIPT_NAME="$(basename "$0")"
 
+# Print CLI usage because this script changes system state and should be explicit.
 usage() {
   cat <<'EOF'
 Usage:
@@ -43,6 +44,7 @@ Examples:
 EOF
 }
 
+# Fail early when a command is mandatory for a status/setup step.
 require_command() {
   local cmd="$1"
   if ! command -v "$cmd" >/dev/null 2>&1; then
@@ -51,6 +53,7 @@ require_command() {
   fi
 }
 
+# Disable desktop idle/sleep behavior so long benchmark runs are not interrupted.
 set_gnome_power_settings() {
   if command -v gsettings >/dev/null 2>&1; then
     gsettings set org.gnome.desktop.session idle-delay 0 || true
@@ -64,12 +67,14 @@ set_gnome_power_settings() {
   fi
 }
 
+# Ask the OS power-profile manager for the highest-performance profile if present.
 set_performance_profile() {
   if command -v powerprofilesctl >/dev/null 2>&1; then
     powerprofilesctl set performance || true
   fi
 }
 
+# Force a fixed performance CPU governor to reduce frequency-scaling noise.
 set_performance_governor() {
   if command -v cpupower >/dev/null 2>&1; then
     sudo cpupower frequency-set -g performance
@@ -84,18 +89,21 @@ set_performance_governor() {
   done
 }
 
+# Turn off radios to reduce background network/Bluetooth activity during measurement.
 disable_radios() {
   if command -v nmcli >/dev/null 2>&1; then
     nmcli radio all off || true
   fi
 }
 
+# Re-enable radios after a measurement session.
 enable_radios() {
   if command -v nmcli >/dev/null 2>&1; then
     nmcli radio all on || true
   fi
 }
 
+# Offline a logical CPU to avoid scheduler or SMT sibling interference.
 offline_cpu() {
   local cpu="$1"
   if [[ "$cpu" == "0" ]]; then
@@ -109,6 +117,7 @@ offline_cpu() {
   echo 0 | sudo tee "/sys/devices/system/cpu/cpu${cpu}/online" >/dev/null
 }
 
+# Bring an explicitly offlined logical CPU back online.
 online_cpu() {
   local cpu="$1"
   if [[ ! -e "/sys/devices/system/cpu/cpu${cpu}/online" ]]; then
@@ -118,17 +127,25 @@ online_cpu() {
   echo 1 | sudo tee "/sys/devices/system/cpu/cpu${cpu}/online" >/dev/null
 }
 
+# Limit common numeric backends to one thread so each benchmark measures one script process, not variable internal parallelism.
 print_thread_exports() {
   cat <<'EOF'
+# OpenMP users, including several compiled scientific libraries.
 export OMP_NUM_THREADS=1
+# OpenBLAS used by NumPy/SciPy/R builds on many Linux systems.
 export OPENBLAS_NUM_THREADS=1
+# Intel MKL used by some NumPy/SciPy/scikit-learn installations.
 export MKL_NUM_THREADS=1
+# NumExpr used by pandas/numpy expression evaluation when installed.
 export NUMEXPR_NUM_THREADS=1
+# Apple Accelerate/vecLib backend used on macOS.
 export VECLIB_MAXIMUM_THREADS=1
+# BLIS backend used by some NumPy/R linear algebra builds.
 export BLIS_NUM_THREADS=1
 EOF
 }
 
+# Show the system settings that most affect runtime/energy repeatability.
 print_status() {
   echo "Power profile:"
   if command -v powerprofilesctl >/dev/null 2>&1; then
@@ -159,6 +176,7 @@ print_status() {
   lscpu -e=CPU,CORE,SOCKET,NODE,ONLINE
 }
 
+# Apply low-noise settings and print the exact shell exports/benchmark command to use.
 do_setup() {
   local pin_cpu=""
   local -a offline_cpus=()
@@ -184,11 +202,13 @@ do_setup() {
     esac
   done
 
+  # Stabilize power, display, network, and CPU-frequency behavior before measuring.
   set_performance_profile
   set_gnome_power_settings
   disable_radios
   set_performance_governor
 
+  # Optionally disable selected logical CPUs, usually SMT siblings of the pinned CPU.
   local cpu
   for cpu in "${offline_cpus[@]}"; do
     offline_cpu "$cpu"
@@ -199,18 +219,21 @@ do_setup() {
   print_thread_exports
 
   echo
+  # RAPL energy counters require perf access; this confirms the event is readable.
   echo "Verify perf access:"
   echo "perf stat -e power/energy-pkg/ -- sleep 0.1"
 
   echo
+  # Pinning keeps the measured process on one logical CPU for more stable runs.
   if [[ -n "$pin_cpu" ]]; then
     echo "Recommended benchmark command:"
-    echo "taskset -c ${pin_cpu} python scripts/evaluation/perf/measure_perf_energy.py --runs 100 --warmup-runs 1 --pause-seconds 60 --timeout 120 --output-dir results/perf_energy_runs/run_100x_60s_pinned_cpu${pin_cpu}"
+    echo "taskset -c ${pin_cpu} python scripts/evaluation/perf/measure_translation_perf_energy.py --runs 30 --warmup-runs 1 --pause-between-runs 1 --pause-seconds 60 --timeout 120 --output-dir results/perf_energy_runs/run_30x_60s_pinned_cpu${pin_cpu}"
   else
     echo "No --pin-cpu value was provided. Use lscpu output from 'status' to pick a logical CPU."
   fi
 }
 
+# Restore the reversible pieces that this script can safely restore by argument.
 do_restore() {
   local -a online_cpus=()
 
@@ -231,6 +254,7 @@ do_restore() {
     esac
   done
 
+  # Only re-enable CPUs that the caller explicitly names.
   local cpu
   for cpu in "${online_cpus[@]}"; do
     online_cpu "$cpu"
@@ -241,6 +265,7 @@ do_restore() {
   echo "Restore completed for requested CPUs and radios."
 }
 
+# Dispatch the requested subcommand.
 main() {
   if (($# == 0)); then
     usage

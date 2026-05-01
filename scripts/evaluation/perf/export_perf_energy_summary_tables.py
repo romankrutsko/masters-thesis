@@ -11,7 +11,9 @@ ROOT = Path(__file__).resolve().parents[3]
 INPUT_CSV = ROOT / "results/statistical_analysis/nonparametric_perf_energy/mann_whitney_vs_original.csv"
 OUTPUT_DIR = ROOT / "results/statistical_analysis/nonparametric_perf_energy/summary_tables"
 
+# The exported tables focus on runtime and energy; power is kept in the detailed analysis file.
 METRICS = ["elapsed_seconds", "energy_joules"]
+# Each grouping becomes a separate CSV for thesis reporting.
 GROUPINGS = {
     "by_language": ["language"],
     "by_model": ["model"],
@@ -22,6 +24,7 @@ GROUPINGS = {
 
 
 def summarize_group(group: pd.DataFrame, metric: str) -> pd.Series:
+    # Count direction and significance of candidate differences inside one group.
     diff = f"{metric}_mean_pct_diff_vs_original"
     sig = f"{metric}_p_value_fdr_bh"
     return pd.Series(
@@ -41,6 +44,7 @@ def summarize_group(group: pd.DataFrame, metric: str) -> pd.Series:
 
 
 def write_group_tables(df: pd.DataFrame) -> None:
+    # Write one grouped summary table per metric and grouping definition.
     for metric in METRICS:
         for name, columns in GROUPINGS.items():
             summary = (
@@ -53,6 +57,7 @@ def write_group_tables(df: pd.DataFrame) -> None:
 
 
 def write_top_tables(df: pd.DataFrame, top_n: int = 10) -> None:
+    # Keep the strongest lower and higher differences visible for manual inspection.
     id_cols = ["model", "prompt_type", "language", "category", "snippet"]
     for metric in METRICS:
         diff = f"{metric}_mean_pct_diff_vs_original"
@@ -67,6 +72,7 @@ def write_top_tables(df: pd.DataFrame, top_n: int = 10) -> None:
 
 
 def write_overview(df: pd.DataFrame) -> None:
+    # Produce one high-level table across all candidates.
     rows = []
     for metric in METRICS:
         diff = f"{metric}_mean_pct_diff_vs_original"

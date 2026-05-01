@@ -27,6 +27,7 @@ import argparse
 import csv
 import json
 import os
+import random
 import re
 import signal
 import subprocess
@@ -48,6 +49,7 @@ STDERR_EXCERPT_LIMIT = 400
 
 @dataclass(frozen=True)
 class CandidateScript:
+    script_id: str
     implementation_type: str
     model: str
     prompt_type: str
@@ -70,10 +72,14 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Measure runtime, energy, and average power for translated candidate scripts using perf."
     )
-    parser.add_argument("--runs", type=int, default=1, help="Measured runs per script.")
+    parser.add_argument("--runs", type=int, default=30, help="Measured runs per script.")
     parser.add_argument("--warmup-runs", type=int, default=1, help="Warm-up runs per script.")
-    parser.add_argument("--pause-seconds", type=float, default=60.0, help="Pause after each script.")
+    parser.add_argument("--pause-between-runs", type=float, default=1.0, help="Passive pause between measured runs of the same script.")
+    parser.add_argument("--pause-seconds", type=float, default=60.0, help="Passive cooldown pause after each script.")
     parser.add_argument("--timeout", type=float, default=120.0, help="Timeout per execution in seconds.")
+    parser.add_argument("--random-seed", type=int, default=20260413, help="Seed for reproducible script-order randomization.")
+    parser.add_argument("--no-randomize-order", action="store_true", help="Keep sorted script order instead of randomizing scripts.")
+    parser.add_argument("--no-drop-caches-between-scripts", action="store_true", help="Do not attempt best-effort OS cache cleanup between scripts.")
     parser.add_argument("--output", type=Path, default=None, help="Output CSV path.")
     parser.add_argument(
         "--summary-output",
@@ -98,6 +104,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def build_interpreter_command(script_path: Path) -> list[str]:
+    # Run each candidate exactly as a normal user would run the file.
     suffix = script_path.suffix.lower()
     if suffix == ".py":
         return ["python3", str(script_path)]
@@ -107,6 +114,7 @@ def build_interpreter_command(script_path: Path) -> list[str]:
 
 
 def load_blacklist(path: Path | None) -> set[str]:
+    # Comments are allowed in the blacklist so failed groups can explain why they are excluded.
     if path is None or not path.exists():
         return set()
     entries: set[str] = set()
@@ -148,6 +156,7 @@ def discover_scripts(base_dir: Path, blacklist_entries: set[str]) -> tuple[list[
 
         out.append(
             CandidateScript(
+                script_id=f"script_{len(out) + 1}",
                 implementation_type="candidate",
                 model=model,
                 prompt_type=prompt_type,
@@ -161,7 +170,16 @@ def discover_scripts(base_dir: Path, blacklist_entries: set[str]) -> tuple[list[
     return out, skipped
 
 
+def order_scripts(scripts: list[CandidateScript], *, randomize: bool, seed: int) -> list[CandidateScript]:
+    # Script IDs stay stable from sorted discovery; only execution order is shuffled.
+    ordered = list(scripts)
+    if randomize:
+        random.Random(seed).shuffle(ordered)
+    return ordered
+
+
 def parse_perf_stderr(stderr_text: str) -> tuple[float, float]:
+    # perf writes counters to stderr, even when the measured command succeeds.
     elapsed_matches = PERF_ELAPSED_RE.findall(stderr_text)
     energy_matches = PERF_ENERGY_RE.findall(stderr_text)
 
@@ -182,6 +200,7 @@ def compact_error(text: str) -> str:
 
 
 def terminate_process_group(proc: subprocess.Popen[str]) -> None:
+    # Timeouts must stop child processes too, not only the top-level interpreter.
     try:
         pgid = os.getpgid(proc.pid)
     except ProcessLookupError:
@@ -200,6 +219,7 @@ def terminate_process_group(proc: subprocess.Popen[str]) -> None:
 
 
 def execute_with_perf(command: Sequence[str], timeout_seconds: float) -> RunResult:
+    # perf measures the whole subprocess lifetime: startup, imports, user code, and shutdown.
     perf_command = ["perf", "stat", "-e", "power/energy-pkg/", "--", *command]
 
     proc = subprocess.Popen(
@@ -278,6 +298,7 @@ def ensure_parent_dir(path: Path) -> None:
 
 def csv_fieldnames() -> list[str]:
     return [
+        "script_id",
         "implementation_type",
         "model",
         "prompt_type",
@@ -295,6 +316,7 @@ def csv_fieldnames() -> list[str]:
 
 
 def write_csv_row(writer: csv.DictWriter, row: dict[str, object], handle) -> None:
+    # Flush after each run so an interrupted long benchmark still leaves usable data.
     writer.writerow(row)
     handle.flush()
 
@@ -305,6 +327,7 @@ def sync_file(handle) -> None:
 
 
 def write_json_atomic(path: Path, payload: dict[str, object]) -> None:
+    # Atomic replacement avoids leaving a half-written summary file after interruption.
     ensure_parent_dir(path)
     tmp_path = path.with_suffix(f"{path.suffix}.tmp")
     tmp_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -313,6 +336,7 @@ def write_json_atomic(path: Path, payload: dict[str, object]) -> None:
 
 def make_csv_row(candidate: CandidateScript, run_id: int, result: RunResult) -> dict[str, object]:
     return {
+        "script_id": candidate.script_id,
         "implementation_type": candidate.implementation_type,
         "model": candidate.model,
         "prompt_type": candidate.prompt_type,
@@ -336,8 +360,31 @@ def validate_args(args: argparse.Namespace) -> None:
         raise SystemExit("--warmup-runs must be >= 0")
     if args.pause_seconds < 0:
         raise SystemExit("--pause-seconds must be >= 0")
+    if args.pause_between_runs < 0:
+        raise SystemExit("--pause-between-runs must be >= 0")
     if args.timeout <= 0:
         raise SystemExit("--timeout must be > 0")
+
+
+def reset_between_scripts(*, drop_caches: bool, pause_seconds: float) -> None:
+    # This is a best-effort reset of OS file caches; CPU caches and thermal state cannot be fully reset here.
+    if drop_caches:
+        subprocess.run(["sync"], cwd=REPO_ROOT, check=False)
+        drop_caches_path = Path("/proc/sys/vm/drop_caches")
+        if drop_caches_path.exists():
+            result = subprocess.run(
+                ["sudo", "sh", "-c", "echo 3 > /proc/sys/vm/drop_caches"],
+                cwd=REPO_ROOT,
+                check=False,
+            )
+            if result.returncode != 0:
+                print("  OS cache cleanup skipped because drop_caches was not writable", flush=True)
+        else:
+            print("  OS cache cleanup skipped because /proc/sys/vm/drop_caches is unavailable", flush=True)
+
+    if pause_seconds > 0:
+        print(f"  sleeping {pause_seconds:.1f}s before next script", flush=True)
+        time.sleep(pause_seconds)
 
 
 def now_stamp() -> str:
@@ -386,11 +433,16 @@ def summary_payload(
         "output_json": str(output_json.resolve()),
         "runs_per_script": args.runs,
         "warmup_runs": args.warmup_runs,
+        "pause_between_runs_seconds": args.pause_between_runs,
         "pause_seconds": args.pause_seconds,
         "timeout_seconds": args.timeout,
+        "randomized_script_order": not args.no_randomize_order,
+        "random_seed": args.random_seed,
+        "drop_caches_between_scripts": not args.no_drop_caches_between_scripts,
         "blacklist_file": str(Path(args.blacklist_file).resolve()) if args.blacklist_file else "",
         "scripts_discovered": len(scripts),
         "scripts_skipped_by_blacklist": blacklist_skipped,
+        "execution_order": [candidate.script_id for candidate in scripts],
         "completed_scripts": completed_scripts,
         "remaining_scripts": max(total_scripts - completed_scripts, 0),
         "measured_runs_attempted": total_attempted_runs,
@@ -418,7 +470,12 @@ def run_benchmark(args: argparse.Namespace) -> int:
         raise SystemExit(f"Base directory does not exist: {base_dir}")
 
     blacklist_entries = load_blacklist(Path(args.blacklist_file).resolve() if args.blacklist_file else None)
-    scripts, blacklist_skipped = discover_scripts(base_dir, blacklist_entries)
+    discovered_scripts, blacklist_skipped = discover_scripts(base_dir, blacklist_entries)
+    scripts = order_scripts(
+        discovered_scripts,
+        randomize=not args.no_randomize_order,
+        seed=args.random_seed,
+    )
     run_dir, output_csv, output_json = resolve_output_paths(args)
     run_dir.mkdir(parents=True, exist_ok=True)
 
@@ -456,7 +513,7 @@ def run_benchmark(args: argparse.Namespace) -> int:
 
         for script_index, candidate in enumerate(scripts, start=1):
             script_label = (
-                f"{candidate.model}/{candidate.prompt_type}/{candidate.language}/"
+                f"{candidate.script_id} {candidate.model}/{candidate.prompt_type}/{candidate.language}/"
                 f"{candidate.category}/{candidate.snippet}"
             )
             print(
@@ -490,12 +547,18 @@ def run_benchmark(args: argparse.Namespace) -> int:
                 row = make_csv_row(candidate, measured_index, result)
                 write_csv_row(writer, row, handle)
 
+                if measured_index < args.runs and args.pause_between_runs > 0:
+                    print(f"    sleeping {args.pause_between_runs:.1f}s before next measured run", flush=True)
+                    time.sleep(args.pause_between_runs)
+
             sync_file(handle)
             checkpoint(completed_scripts=script_index, status="running", current_script=script_label)
 
-            if script_index < total_scripts and args.pause_seconds > 0:
-                print(f"  sleeping {args.pause_seconds:.1f}s before next script", flush=True)
-                time.sleep(args.pause_seconds)
+            if script_index < total_scripts:
+                reset_between_scripts(
+                    drop_caches=not args.no_drop_caches_between_scripts,
+                    pause_seconds=args.pause_seconds,
+                )
 
     summary = summary_payload(
         args=args,

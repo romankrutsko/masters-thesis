@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Stage the original task scripts under a repo-local benchmark layout and then
-invoke scripts/evaluation/perf/measure_perf_energy.py unchanged.
+invoke scripts/evaluation/perf/measure_translation_perf_energy.py unchanged.
 
 This avoids the original script's assumption that discovered files live under
 the repository root while still benchmarking the original implementations.
@@ -25,7 +25,7 @@ def parse_args() -> tuple[argparse.Namespace, list[str]]:
     parser = argparse.ArgumentParser(
         description=(
             "Create a repo-local staging layout for the original Python/R task "
-            "scripts and forward benchmark arguments to measure_perf_energy.py."
+            "scripts and forward benchmark arguments to measure_translation_perf_energy.py."
         )
     )
     parser.add_argument(
@@ -44,12 +44,14 @@ def parse_args() -> tuple[argparse.Namespace, list[str]]:
 
 
 def ensure_clean_dir(path: Path) -> None:
+    # Rebuild the staging layout from scratch so old symlinks cannot affect a new run.
     if path.exists():
         shutil.rmtree(path)
     path.mkdir(parents=True, exist_ok=True)
 
 
 def stage_language(source_root: Path, target_root: Path) -> None:
+    # Mirror category/script files as symlinks to match the translation benchmark layout.
     if not source_root.exists():
         raise SystemExit(f"Source directory does not exist: {source_root}")
 
@@ -65,6 +67,7 @@ def stage_language(source_root: Path, target_root: Path) -> None:
 
 
 def build_stage_layout(stage_dir: Path) -> Path:
+    # The benchmark expects model/prompt/language/category/script, so originals are staged as original/base.
     base_dir = stage_dir / "original" / "base"
     ensure_clean_dir(stage_dir)
     stage_language(PYTHON_SOURCE_DIR, base_dir / "python")
@@ -73,6 +76,7 @@ def build_stage_layout(stage_dir: Path) -> Path:
 
 
 def validate_forwarded_args(forwarded_args: list[str]) -> None:
+    # The wrapper owns --base-dir because it must point to the staged original layout.
     blocked_flags = {"--base-dir"}
     for arg in forwarded_args:
         if arg == "--base-dir" or any(arg.startswith(f"{flag}=") for flag in blocked_flags):
@@ -80,9 +84,10 @@ def validate_forwarded_args(forwarded_args: list[str]) -> None:
 
 
 def run_benchmark(stage_dir: Path, forwarded_args: list[str]) -> int:
+    # Reuse the same measurement implementation for originals and translations.
     command = [
         sys.executable,
-        str(REPO_ROOT / "scripts" / "evaluation" / "perf" / "measure_perf_energy.py"),
+        str(REPO_ROOT / "scripts" / "evaluation" / "perf" / "measure_translation_perf_energy.py"),
         "--base-dir",
         str(stage_dir),
         *forwarded_args,
@@ -102,6 +107,7 @@ def main() -> None:
     try:
         raise SystemExit(run_benchmark(stage_dir, forwarded_args))
     finally:
+        # Remove temporary symlinks unless the caller wants to inspect the staged layout.
         if not args.keep_stage_dir and stage_dir.exists():
             shutil.rmtree(stage_dir)
 

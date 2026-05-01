@@ -19,6 +19,6 @@ This directory groups the repository's evaluation tooling in one place.
 
 - `scripts/evaluation/reliability/run_reliability_evaluation.py`
 - `scripts/evaluation/maintainability/run_maintainability_evaluation.py`
-- `scripts/evaluation/perf/measure_perf_energy.py`
-- `scripts/evaluation/perf/run_original_perf_energy.py`
+- `scripts/evaluation/perf/measure_translation_perf_energy.py`
+- `scripts/evaluation/perf/measure_original_perf_energy.py`
 - `scripts/evaluation/perf/run_perf_energy_nonparametric_analysis.py`
