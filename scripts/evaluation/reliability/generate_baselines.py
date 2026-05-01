@@ -7,7 +7,6 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -16,6 +15,9 @@ TASK_EQ_ROOT = REPO_ROOT / "task_equivalents"
 PY_ROOT = TASK_EQ_ROOT / "python"
 R_ROOT = TASK_EQ_ROOT / "r"
 OUT_DIR = TASK_EQ_ROOT / "baselines"
+HELPER_DIR = Path(__file__).resolve().parent / "helpers"
+PYTHON_CAPTURE_HELPER = HELPER_DIR / "python_capture.py"
+R_CAPTURE_HELPER = HELPER_DIR / "r_capture.R"
 
 
 def sha256_text(s: str) -> str:
@@ -47,196 +49,24 @@ def ensure_text(value: str | bytes | None) -> str:
     return value
 
 
-def run_python_baseline(script_path: Path, python_bin: str, timeout_sec: float | None = None) -> dict:
-    # Run the target in a clean helper process so crashes, imports, and globals from one candidate cannot leak into the evaluator or the next candidate.
-    helper = r'''
-import contextlib
-import io
-import json
-import math
-import os
-import runpy
-import sys
-import types
-from pathlib import Path
-
-import numpy as np
-import pandas as pd
-
-
-def r6(v):
-    if isinstance(v, (float, np.floating)):
-        if math.isnan(float(v)) or math.isinf(float(v)):
-            return None
-        return round(float(v), 6)
-    return v
-
-
-def summarize_scalar(v):
-    if isinstance(v, (np.integer,)):
-        return int(v)
-    if isinstance(v, (np.floating, float)):
-        return r6(v)
-    if isinstance(v, (np.bool_, bool)):
-        return bool(v)
-    if isinstance(v, str):
-        return v
-    return None
-
-
-def summarize_value(v):
-    if isinstance(v, pd.DataFrame):
-        out = {
-            "type": "DataFrame",
-            "shape": [int(v.shape[0]), int(v.shape[1])],
-            "columns": [str(c) for c in v.columns.tolist()],
-            "na_total": int(v.isna().sum().sum()),
-        }
-        num = v.select_dtypes(include=[np.number])
-        if num.shape[1] > 0:
-            means = {str(c): r6(num[c].mean()) for c in num.columns}
-            sds = {str(c): r6(num[c].std(ddof=1)) for c in num.columns}
-            out["numeric_means"] = means
-            out["numeric_sds"] = sds
-        return out
-
-    if isinstance(v, pd.Series):
-        out = {
-            "type": "Series",
-            "name": str(v.name),
-            "length": int(v.shape[0]),
-            "dtype": str(v.dtype),
-            "na_total": int(v.isna().sum()),
-            "unique_count": int(v.nunique(dropna=True)),
-        }
-        if pd.api.types.is_numeric_dtype(v):
-            out["sum"] = r6(v.sum())
-            out["mean"] = r6(v.mean())
-            out["std"] = r6(v.std(ddof=1))
-            vals = sorted(v.dropna().unique().tolist())
-            out["unique_values_head"] = [r6(x) for x in vals[:20]]
-        return out
-
-    if isinstance(v, np.ndarray):
-        out = {
-            "type": "ndarray",
-            "shape": [int(x) for x in v.shape],
-            "dtype": str(v.dtype),
-        }
-        if np.issubdtype(v.dtype, np.number):
-            vv = v.astype(float)
-            out["mean"] = r6(np.mean(vv))
-            out["std"] = r6(np.std(vv, ddof=1)) if vv.size > 1 else None
-            out["sum"] = r6(np.sum(vv))
-            out["min"] = r6(np.min(vv))
-            out["max"] = r6(np.max(vv))
-        return out
-
-    if isinstance(v, (list, tuple)):
-        out = {"type": type(v).__name__, "length": len(v)}
-        if len(v) and all(isinstance(x, (int, float, np.integer, np.floating)) for x in v):
-            arr = np.array(v, dtype=float)
-            out["mean"] = r6(arr.mean())
-            out["std"] = r6(arr.std(ddof=1)) if arr.size > 1 else None
-            out["sum"] = r6(arr.sum())
-        return out
-
-    if isinstance(v, (int, float, str, bool, np.integer, np.floating, np.bool_)):
-        return {"type": "scalar", "value": summarize_scalar(v)}
-
-    # statsmodels results often expose params.
-    if hasattr(v, "params"):
-        try:
-            params = np.asarray(v.params, dtype=float).ravel().tolist()
-            return {"type": type(v).__name__, "params": [r6(x) for x in params]}
-        except Exception:
-            pass
-
-    # sklearn fitted estimators expose *_ attributes.
-    model_bits = {}
-    for attr in ["coef_", "intercept_", "feature_importances_", "best_score_", "best_params_", "alpha_", "C"]:
-        if hasattr(v, attr):
-            try:
-                val = getattr(v, attr)
-                if isinstance(val, np.ndarray):
-                    model_bits[attr] = [r6(x) for x in val.ravel().tolist()[:50]]
-                elif isinstance(val, (list, tuple)):
-                    model_bits[attr] = [r6(x) if isinstance(x, (int, float, np.integer, np.floating)) else str(x) for x in list(val)[:50]]
-                elif isinstance(val, (int, float, np.integer, np.floating)):
-                    model_bits[attr] = r6(val)
-                elif isinstance(val, dict):
-                    model_bits[attr] = {str(k): (r6(vv) if isinstance(vv, (int, float, np.integer, np.floating)) else str(vv)) for k, vv in val.items()}
-                else:
-                    model_bits[attr] = str(val)
-            except Exception:
-                pass
-    if model_bits:
-        return {"type": type(v).__name__, "model": model_bits}
-
-    return None
-
-
-repo_root = Path(os.environ["BASELINE_REPO_ROOT"])
-script_path = Path(os.environ["BASELINE_SCRIPT"])
-os.chdir(repo_root)
-
-buffer = io.StringIO()
-with contextlib.redirect_stdout(buffer):
-    # Match `python script.py`: run guarded main blocks and expose a normal argv.
-    old_argv = sys.argv[:]
-    sys.argv = [str(script_path)]
-    try:
-        ns = runpy.run_path(str(script_path), run_name="__main__")
-    finally:
-        sys.argv = old_argv
-stdout = buffer.getvalue()
-
-var_summary = {}
-for key in sorted(ns.keys()):
-    if key.startswith("__"):
-        continue
-    val = ns[key]
-    if isinstance(val, types.ModuleType):
-        continue
-    if callable(val):
-        continue
-    summary = summarize_value(val)
-    if summary is not None:
-        var_summary[key] = summary
-
-result = {
-    "stdout": stdout,
-    "var_summary": var_summary,
-}
-
-def sanitize(x):
-    if isinstance(x, dict):
-        return {str(k): sanitize(v) for k, v in x.items()}
-    if isinstance(x, list):
-        return [sanitize(v) for v in x]
-    if isinstance(x, tuple):
-        return [sanitize(v) for v in x]
-    if isinstance(x, np.integer):
-        return int(x)
-    if isinstance(x, np.floating):
-        return r6(x)
-    if isinstance(x, np.bool_):
-        return bool(x)
-    return x
-
-print(json.dumps(sanitize(result)))
-'''
-
+def baseline_env(script_path: Path) -> dict[str, str]:
     env = os.environ.copy()
     env["BASELINE_REPO_ROOT"] = str(REPO_ROOT)
     env["BASELINE_SCRIPT"] = str(script_path)
+    return env
+
+
+def run_python_baseline(script_path: Path, python_bin: str, timeout_sec: float | None = None) -> dict:
+    # Run the target in a clean helper process so crashes, imports, and globals
+    # from one candidate cannot leak into the evaluator or the next candidate.
+    env = baseline_env(script_path)
     env["MPLBACKEND"] = "Agg"
     env["MPLCONFIGDIR"] = "/tmp/mplcfg"
     env["PYTHONDONTWRITEBYTECODE"] = "1"
 
     try:
         proc = subprocess.run(
-            [python_bin, "-c", helper],
+            [python_bin, str(PYTHON_CAPTURE_HELPER)],
             cwd=str(REPO_ROOT),
             env=env,
             text=True,
@@ -297,148 +127,32 @@ print(json.dumps(sanitize(result)))
 
 
 def run_r_baseline(script_path: Path, rscript_bin: str, timeout_sec: float | None = None) -> dict:
-    # The R path is embedded into a temporary wrapper script.
-    escaped_path = str(script_path).replace("'", "\\'")
-    wrapper = f"""
-options(stringsAsFactors = FALSE)
-options(device = function(...) pdf(file = tempfile(fileext = '.pdf')))
-if (!requireNamespace("jsonlite", quietly = TRUE)) {{
-  stop("Package 'jsonlite' is required for JSON baseline output. Install via install.packages('jsonlite').")
-}}
-
-summarize_obj <- function(x) {{
-  cls <- class(x)[1]
-
-  round_num <- function(v) round(as.numeric(v), 6)
-
-  if (is.data.frame(x)) {{
-    out <- list(type='data.frame', nrow=nrow(x), ncol=ncol(x), colnames=colnames(x), na_total=sum(is.na(x)))
-    num_idx <- vapply(x, is.numeric, logical(1))
-    if (any(num_idx)) {{
-      num <- x[, num_idx, drop=FALSE]
-      out$numeric_means <- lapply(num, function(col) round_num(mean(col)))
-      out$numeric_sds <- lapply(num, function(col) round_num(sd(col)))
-    }}
-    return(out)
-  }}
-
-  if (is.matrix(x)) {{
-    out <- list(type='matrix', dim=dim(x), na_total=sum(is.na(x)))
-    if (is.numeric(x)) {{
-      out$mean <- round_num(mean(x))
-      out$sd <- round_num(sd(as.vector(x)))
-      out$sum <- round_num(sum(x))
-    }}
-    return(out)
-  }}
-
-  if (is.factor(x)) {{
-    tbl <- table(x)
-    return(list(type='factor', length=length(x), levels=levels(x), counts=as.list(as.integer(tbl))))
-  }}
-
-  if (is.numeric(x) || is.integer(x)) {{
-    out <- list(type='numeric', length=length(x), na_total=sum(is.na(x)))
-    if (length(x) > 0) {{
-      out$mean <- round_num(mean(x, na.rm=TRUE))
-      out$sd <- round_num(sd(x, na.rm=TRUE))
-      out$sum <- round_num(sum(x, na.rm=TRUE))
-      out$min <- round_num(min(x, na.rm=TRUE))
-      out$max <- round_num(max(x, na.rm=TRUE))
-    }}
-    return(out)
-  }}
-
-  if (is.character(x)) {{
-    return(list(type='character', length=length(x), unique_count=length(unique(x))))
-  }}
-
-  if (inherits(x, 'lm') || inherits(x, 'glm')) {{
-    return(list(type=cls, coef=as.list(round_num(coef(x)))))
-  }}
-
-  if (inherits(x, 'tune')) {{
-    out <- list(type='tune')
-    if (!is.null(x$best.parameters)) out$best_parameters <- as.list(x$best.parameters)
-    if (!is.null(x$best.performance)) out$best_performance <- round_num(x$best.performance)
-    return(out)
-  }}
-
-  if (inherits(x, 'cv.glmnet')) {{
-    return(list(type='cv.glmnet', lambda_min=round_num(x$lambda.min), lambda_1se=round_num(x$lambda.1se)))
-  }}
-
-  if (inherits(x, 'gbm')) {{
-    s <- tryCatch(summary(x, plotit=FALSE), error=function(e) NULL)
-    out <- list(type='gbm')
-    if (!is.null(s)) {{
-      s <- s[order(-s$rel.inf), , drop=FALSE]
-      top <- head(s, 10)
-      out$top_features <- as.list(as.character(top$var))
-      out$top_rel_inf <- as.list(round_num(top$rel.inf))
-    }}
-    return(out)
-  }}
-
-  if (is.list(x)) {{
-    return(list(type='list', length=length(x), names=names(x)))
-  }}
-
-  return(list(type=cls, length=length(x)))
-}}
-
-script_path <- '{escaped_path}'
-
-captured <- capture.output(source(script_path, local=TRUE))
-objs <- sort(ls())
-out <- list()
-for (nm in objs) {{
-  val <- get(nm)
-  if (is.function(val)) next
-  out[[nm]] <- summarize_obj(val)
-}}
-
-cat('---SCRIPT_OUTPUT_START---\\n')
-if (length(captured) > 0) cat(paste(captured, collapse='\\n'))
-cat('\\n---SCRIPT_OUTPUT_END---\\n')
-cat('---SUMMARY_JSON_START---\\n')
-jsonlite::write_json(out, path = stdout(), auto_unbox = TRUE, na = "null")
-cat('\\n---SUMMARY_JSON_END---\\n')
-"""
-
-    # Source the candidate inside a wrapper so we can capture both its printed
-    # output and a JSON summary of the objects it created.
-    with tempfile.NamedTemporaryFile("w", suffix=".R", delete=False) as f:
-        f.write(wrapper)
-        wrapper_path = Path(f.name)
-
+    # The R helper prints marker-delimited script output and summary JSON.
     try:
-        try:
-            proc = subprocess.run(
-                [rscript_bin, str(wrapper_path)],
-                cwd=str(REPO_ROOT),
-                text=True,
-                capture_output=True,
-                check=False,
-                timeout=timeout_sec,
-            )
-        except subprocess.TimeoutExpired as exc:
-            stdout = ensure_text(exc.stdout)
-            stderr = ensure_text(exc.stderr)
-            return {
-                "language": "r",
-                "path": str(script_path.relative_to(REPO_ROOT)),
-                "script_sha256": sha256_file(script_path),
-                "exit_code": None,
-                "status": "error",
-                "error": f"R script timed out after {timeout_sec:.1f}s" if timeout_sec is not None else "R script timed out",
-                "stdout": short_text(stdout),
-                "stdout_sha256": sha256_text(stdout),
-                "stderr": short_text(stderr),
-                "stderr_sha256": sha256_text(stderr),
-            }
-    finally:
-        wrapper_path.unlink(missing_ok=True)
+        proc = subprocess.run(
+            [rscript_bin, str(R_CAPTURE_HELPER)],
+            cwd=str(REPO_ROOT),
+            env=baseline_env(script_path),
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=timeout_sec,
+        )
+    except subprocess.TimeoutExpired as exc:
+        stdout = ensure_text(exc.stdout)
+        stderr = ensure_text(exc.stderr)
+        return {
+            "language": "r",
+            "path": str(script_path.relative_to(REPO_ROOT)),
+            "script_sha256": sha256_file(script_path),
+            "exit_code": None,
+            "status": "error",
+            "error": f"R script timed out after {timeout_sec:.1f}s" if timeout_sec is not None else "R script timed out",
+            "stdout": short_text(stdout),
+            "stdout_sha256": sha256_text(stdout),
+            "stderr": short_text(stderr),
+            "stderr_sha256": sha256_text(stderr),
+        }
 
     base = {
         "language": "r",
