@@ -1,14 +1,6 @@
-# Candidate paths to exclude from translation evaluation.
-# Format: one repo-relative candidate path per line. Blank lines and comments are ignored.
-#
-# Source:
-# - Failed candidates from task_equivalents/evaluation_outputs/20260413T080227Z/execution_scores.json
-# - One additional StarCoder base R workflow path added from user-reported long runtime (~19 min)
-# - Two additional workflow paths added after rerun_timeout_120s_all due to likely timeout/iteration stalls
-
+# Failed because of Execution halted.
 task_equivalents/llm_translations/gpt/base/r/data_visualization/01_scatter_trend_grouped.R
 task_equivalents/llm_translations/gpt/base/r/statistical_modelling_analysis/01_linear_regression_inference.R
-task_equivalents/llm_translations/llama/base/python/data_manipulation_preprocessing/01_impute_encode_scale.py
 task_equivalents/llm_translations/llama/base/r/data_manipulation_preprocessing/01_impute_encode_scale.R
 task_equivalents/llm_translations/llama/base/r/data_manipulation_preprocessing/02_merge_aggregate_reshape.R
 task_equivalents/llm_translations/llama/base/r/data_visualization/01_scatter_trend_grouped.R
@@ -16,9 +8,6 @@ task_equivalents/llm_translations/llama/base/r/machine_learning_workflows/01_pip
 task_equivalents/llm_translations/llama/base/r/machine_learning_workflows/02_regression_workflow_feature_importance.R
 task_equivalents/llm_translations/llama/base/r/statistical_modelling_analysis/01_linear_regression_inference.R
 task_equivalents/llm_translations/llama/base/r/statistical_modelling_analysis/02_logistic_regression_odds_ratios.R
-task_equivalents/llm_translations/llama/optimized/python/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.py
-task_equivalents/llm_translations/llama/optimized/python/machine_learning_workflows/02_regression_workflow_feature_importance.py
-task_equivalents/llm_translations/llama/optimized/python/statistical_modelling_analysis/01_linear_regression_inference.py
 task_equivalents/llm_translations/llama/optimized/r/data_manipulation_preprocessing/01_impute_encode_scale.R
 task_equivalents/llm_translations/llama/optimized/r/data_manipulation_preprocessing/02_merge_aggregate_reshape.R
 task_equivalents/llm_translations/llama/optimized/r/data_visualization/01_scatter_trend_grouped.R
@@ -27,19 +16,12 @@ task_equivalents/llm_translations/llama/optimized/r/machine_learning_workflows/0
 task_equivalents/llm_translations/llama/optimized/r/machine_learning_workflows/02_regression_workflow_feature_importance.R
 task_equivalents/llm_translations/llama/optimized/r/statistical_modelling_analysis/01_linear_regression_inference.R
 task_equivalents/llm_translations/llama/optimized/r/statistical_modelling_analysis/02_logistic_regression_odds_ratios.R
-task_equivalents/llm_translations/starcoder/base/python/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.py
-task_equivalents/llm_translations/starcoder/base/python/machine_learning_workflows/02_regression_workflow_feature_importance.py
 task_equivalents/llm_translations/starcoder/base/r/data_manipulation_preprocessing/02_merge_aggregate_reshape.R
 task_equivalents/llm_translations/starcoder/base/r/data_visualization/01_scatter_trend_grouped.R
 task_equivalents/llm_translations/starcoder/base/r/data_visualization/02_distribution_boxplot.R
 task_equivalents/llm_translations/starcoder/base/r/machine_learning_workflows/02_regression_workflow_feature_importance.R
 task_equivalents/llm_translations/starcoder/base/r/statistical_modelling_analysis/01_linear_regression_inference.R
 task_equivalents/llm_translations/starcoder/base/r/statistical_modelling_analysis/02_logistic_regression_odds_ratios.R
-task_equivalents/llm_translations/starcoder/optimized/python/data_manipulation_preprocessing/01_impute_encode_scale.py
-task_equivalents/llm_translations/starcoder/optimized/python/data_manipulation_preprocessing/02_merge_aggregate_reshape.py
-task_equivalents/llm_translations/starcoder/optimized/python/data_visualization/01_scatter_trend_grouped.py
-task_equivalents/llm_translations/starcoder/optimized/python/data_visualization/02_distribution_boxplot.py
-task_equivalents/llm_translations/starcoder/optimized/python/statistical_modelling_analysis/01_linear_regression_inference.py
 task_equivalents/llm_translations/starcoder/optimized/r/data_manipulation_preprocessing/02_merge_aggregate_reshape.R
 task_equivalents/llm_translations/starcoder/optimized/r/data_visualization/01_scatter_trend_grouped.R
 task_equivalents/llm_translations/starcoder/optimized/r/data_visualization/02_distribution_boxplot.R
@@ -47,14 +29,43 @@ task_equivalents/llm_translations/starcoder/optimized/r/machine_learning_workflo
 task_equivalents/llm_translations/starcoder/optimized/r/statistical_modelling_analysis/01_linear_regression_inference.R
 task_equivalents/llm_translations/starcoder/optimized/r/statistical_modelling_analysis/02_logistic_regression_odds_ratios.R
 
-# User-reported long runner (~19 min) and also regressed in rerun_timeout_120s_all
+# Failed because of KeyError: 'None of [None] are in the columns'
+task_equivalents/llm_translations/llama/base/python/data_manipulation_preprocessing/01_impute_encode_scale.py
+
+# Failed because of TypeError: __init__() got an unexpected keyword argument 'random_state'
+task_equivalents/llm_translations/llama/optimized/python/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.py
+
+# Failed because of TypeError: predict() got an unexpected keyword argument 's'
+task_equivalents/llm_translations/llama/optimized/python/machine_learning_workflows/02_regression_workflow_feature_importance.py
+
+# Failed because of ValueError: shapes (1,1) and (2,) not aligned: 1 (dim 1) != 2 (dim 0)
+task_equivalents/llm_translations/llama/optimized/python/statistical_modelling_analysis/01_linear_regression_inference.py
+
+# Failed because of ValueError: Input y contains NaN.
+task_equivalents/llm_translations/starcoder/base/python/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.py
+task_equivalents/llm_translations/starcoder/optimized/python/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.py
+
+# Failed because of KeyError: "['Player', 'Name'] not found in axis"
+task_equivalents/llm_translations/starcoder/base/python/machine_learning_workflows/02_regression_workflow_feature_importance.py
+task_equivalents/llm_translations/starcoder/optimized/python/machine_learning_workflows/02_regression_workflow_feature_importance.py
+
+# Failed because of KeyError: 'mpg'
+task_equivalents/llm_translations/starcoder/optimized/python/data_manipulation_preprocessing/01_impute_encode_scale.py
+
+# Failed because of TypeError: Passing a bool to header is invalid. Use header=None for no header or header=int or list-like of ints to specify the row(s) making up the column names
+task_equivalents/llm_translations/starcoder/optimized/python/data_manipulation_preprocessing/02_merge_aggregate_reshape.py
+
+# Failed because of NameError: name 'np' is not defined
+task_equivalents/llm_translations/starcoder/optimized/python/data_visualization/01_scatter_trend_grouped.py
+
+# Failed because of TypeError: list indices must be integers or slices, not str
+task_equivalents/llm_translations/starcoder/optimized/python/data_visualization/02_distribution_boxplot.py
+
+# Failed because of NameError: name 'sm' is not defined
+task_equivalents/llm_translations/starcoder/optimized/python/statistical_modelling_analysis/01_linear_regression_inference.py
+
+# Failed because of long runtime (~19 min).
 task_equivalents/llm_translations/starcoder/base/r/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.R
 
-# Added after task_equivalents/evaluation_outputs/rerun_timeout_120s_all due to likely timeout/iteration stalls
+# Failed because of likely timeout/iteration stall.
 task_equivalents/llm_translations/gpt/optimized/r/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.R
-
-# Added after perf benchmarking exposed real runtime failures that were missed by the
-# reliability evaluator because these scripts only execute their main logic under
-# if __name__ == "__main__".
-task_equivalents/llm_translations/starcoder/optimized/python/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.py
-task_equivalents/llm_translations/starcoder/optimized/python/machine_learning_workflows/02_regression_workflow_feature_importance.py
