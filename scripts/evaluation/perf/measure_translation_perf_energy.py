@@ -29,6 +29,7 @@ import json
 import os
 import random
 import re
+import shutil
 import signal
 import subprocess
 import time
@@ -45,6 +46,7 @@ DEFAULT_BLACKLIST = REPO_ROOT / "scripts" / "evaluation" / "helpers" / "evaluati
 PERF_ELAPSED_RE = re.compile(r"([0-9][0-9,]*(?:\.[0-9]+)?)\s+seconds\s+time\s+elapsed")
 PERF_ENERGY_RE = re.compile(r"([0-9][0-9,]*(?:\.[0-9]+)?)\s+Joules\s+power/energy-pkg/")
 STDERR_EXCERPT_LIMIT = 400
+SUDO_KEEPALIVE_SECONDS = 60
 
 
 @dataclass(frozen=True)
@@ -367,6 +369,45 @@ def validate_args(args: argparse.Namespace) -> None:
         raise SystemExit("--timeout must be > 0")
 
 
+def drop_caches_available() -> bool:
+    return Path("/proc/sys/vm/drop_caches").exists() and shutil.which("sudo") is not None
+
+
+def refresh_sudo_or_exit() -> None:
+    print("Cache dropping needs sudo. Authenticating before measurements start ...", flush=True)
+    result = subprocess.run(["sudo", "-v"], cwd=REPO_ROOT, check=False)
+    if result.returncode != 0:
+        raise SystemExit("sudo authentication failed; cannot drop caches between scripts")
+
+
+def start_sudo_keepalive(enabled: bool) -> subprocess.Popen[str] | None:
+    if not enabled:
+        return None
+
+    command = (
+        f"while true; do sudo -n -v >/dev/null 2>&1 || exit 1; "
+        f"sleep {SUDO_KEEPALIVE_SECONDS}; done"
+    )
+    return subprocess.Popen(
+        ["sh", "-c", command],
+        cwd=str(REPO_ROOT),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        text=True,
+    )
+
+
+def stop_sudo_keepalive(proc: subprocess.Popen[str] | None) -> None:
+    if proc is None:
+        return
+    proc.terminate()
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait(timeout=5)
+
+
 def reset_between_scripts(*, drop_caches: bool, pause_seconds: float) -> None:
     # CPU caches and thermal state cannot be fully reset here.
     if drop_caches:
@@ -374,7 +415,7 @@ def reset_between_scripts(*, drop_caches: bool, pause_seconds: float) -> None:
         drop_caches_path = Path("/proc/sys/vm/drop_caches")
         if drop_caches_path.exists():
             result = subprocess.run(
-                ["sudo", "sh", "-c", "echo 3 > /proc/sys/vm/drop_caches"],
+                ["sudo", "-n", "sh", "-c", "echo 3 > /proc/sys/vm/drop_caches"],
                 cwd=REPO_ROOT,
                 check=False,
             )
@@ -470,6 +511,12 @@ def run_benchmark(args: argparse.Namespace) -> int:
     if not base_dir.exists():
         raise SystemExit(f"Base directory does not exist: {base_dir}")
 
+    drop_caches = not args.no_drop_caches_between_scripts and drop_caches_available()
+    if not args.no_drop_caches_between_scripts and drop_caches:
+        refresh_sudo_or_exit()
+    elif not args.no_drop_caches_between_scripts:
+        print("OS cache cleanup skipped because sudo or /proc/sys/vm/drop_caches is unavailable", flush=True)
+
     # Discovery assigns stable script IDs before the execution order is randomized.
     blacklist_entries = load_blacklist(Path(args.blacklist_file).resolve() if args.blacklist_file else None)
     discovered_scripts, blacklist_skipped = discover_scripts(base_dir, blacklist_entries)
@@ -486,6 +533,7 @@ def run_benchmark(args: argparse.Namespace) -> int:
     successful_runs = 0
     failed_runs = 0
     total_scripts = len(scripts)
+    sudo_keepalive = start_sudo_keepalive(drop_caches)
 
     def checkpoint(*, completed_scripts: int, status: str, current_script: str) -> None:
         # Write progress after each script so an interrupted benchmark still has a useful manifest.
@@ -508,65 +556,68 @@ def run_benchmark(args: argparse.Namespace) -> int:
         )
         write_json_atomic(output_json, payload)
 
-    with output_csv.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=csv_fieldnames())
-        writer.writeheader()
-        sync_file(handle)
-        checkpoint(completed_scripts=0, status="running", current_script="")
-
-        for script_index, candidate in enumerate(scripts, start=1):
-            script_label = (
-                f"{candidate.script_id} {candidate.model}/{candidate.prompt_type}/{candidate.language}/"
-                f"{candidate.category}/{candidate.snippet}"
-            )
-            print(
-                f"[{script_index}/{total_scripts}] {script_label}"
-            )
-
-            command = build_interpreter_command(candidate.script_path)
-
-            for warmup_index in range(1, args.warmup_runs + 1):
-                # Warm-up runs are intentionally not written to CSV because they are not analysis samples.
-                print(f"  warm-up {warmup_index}/{args.warmup_runs} ...", flush=True)
-                warmup_result = execute_with_perf(command, timeout_seconds=args.timeout)
-                print(f"    -> {warmup_result.status}", flush=True)
-
-            for measured_index in range(1, args.runs + 1):
-                # Each measured run becomes one CSV row, whether it succeeds or fails.
-                total_attempted_runs += 1
-                print(f"  measured {measured_index}/{args.runs} ...", flush=True)
-                result = execute_with_perf(command, timeout_seconds=args.timeout)
-                if result.status == "ok":
-                    successful_runs += 1
-                    print(
-                        "    -> ok "
-                        f"elapsed={result.elapsed_seconds:.6f}s "
-                        f"energy={result.energy_joules:.6f}J "
-                        f"power={result.avg_power_watts:.6f}W",
-                        flush=True,
-                    )
-                else:
-                    failed_runs += 1
-                    print(f"    -> error: {result.error_message}", flush=True)
-
-                row = make_csv_row(candidate, measured_index, result)
-                write_csv_row(writer, row, handle)
-
-                if measured_index < args.runs and args.pause_between_runs > 0:
-                    # Short intra-script pause reduces immediate back-to-back run interference.
-                    print(f"    sleeping {args.pause_between_runs:.1f}s before next measured run", flush=True)
-                    time.sleep(args.pause_between_runs)
-
-            # Force the completed script's rows to disk before moving to the next script.
+    try:
+        with output_csv.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=csv_fieldnames())
+            writer.writeheader()
             sync_file(handle)
-            checkpoint(completed_scripts=script_index, status="running", current_script=script_label)
+            checkpoint(completed_scripts=0, status="running", current_script="")
 
-            if script_index < total_scripts:
-                # Between scripts, reduce OS cache carryover before the cooldown pause.
-                reset_between_scripts(
-                    drop_caches=not args.no_drop_caches_between_scripts,
-                    pause_seconds=args.pause_seconds,
+            for script_index, candidate in enumerate(scripts, start=1):
+                script_label = (
+                    f"{candidate.script_id} {candidate.model}/{candidate.prompt_type}/{candidate.language}/"
+                    f"{candidate.category}/{candidate.snippet}"
                 )
+                print(
+                    f"[{script_index}/{total_scripts}] {script_label}"
+                )
+
+                command = build_interpreter_command(candidate.script_path)
+
+                for warmup_index in range(1, args.warmup_runs + 1):
+                    # Warm-up runs are intentionally not written to CSV because they are not analysis samples.
+                    print(f"  warm-up {warmup_index}/{args.warmup_runs} ...", flush=True)
+                    warmup_result = execute_with_perf(command, timeout_seconds=args.timeout)
+                    print(f"    -> {warmup_result.status}", flush=True)
+
+                for measured_index in range(1, args.runs + 1):
+                    # Each measured run becomes one CSV row, whether it succeeds or fails.
+                    total_attempted_runs += 1
+                    print(f"  measured {measured_index}/{args.runs} ...", flush=True)
+                    result = execute_with_perf(command, timeout_seconds=args.timeout)
+                    if result.status == "ok":
+                        successful_runs += 1
+                        print(
+                            "    -> ok "
+                            f"elapsed={result.elapsed_seconds:.6f}s "
+                            f"energy={result.energy_joules:.6f}J "
+                            f"power={result.avg_power_watts:.6f}W",
+                            flush=True,
+                        )
+                    else:
+                        failed_runs += 1
+                        print(f"    -> error: {result.error_message}", flush=True)
+
+                    row = make_csv_row(candidate, measured_index, result)
+                    write_csv_row(writer, row, handle)
+
+                    if measured_index < args.runs and args.pause_between_runs > 0:
+                        # Short intra-script pause reduces immediate back-to-back run interference.
+                        print(f"    sleeping {args.pause_between_runs:.1f}s before next measured run", flush=True)
+                        time.sleep(args.pause_between_runs)
+
+                # Force the completed script's rows to disk before moving to the next script.
+                sync_file(handle)
+                checkpoint(completed_scripts=script_index, status="running", current_script=script_label)
+
+                if script_index < total_scripts:
+                    # Between scripts, reduce OS cache carryover before the cooldown pause.
+                    reset_between_scripts(
+                        drop_caches=drop_caches,
+                        pause_seconds=args.pause_seconds,
+                    )
+    finally:
+        stop_sudo_keepalive(sudo_keepalive)
 
     # Mark the run as completed after the CSV file has been closed cleanly.
     summary = summary_payload(
