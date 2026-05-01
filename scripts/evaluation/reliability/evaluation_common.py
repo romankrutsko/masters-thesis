@@ -10,9 +10,11 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Resolve paths from this file so commands can be run from any working directory.
 REPO_ROOT = Path(__file__).resolve().parents[3]
 TASK_EQ_ROOT = REPO_ROOT / "task_equivalents"
 LLM_ROOT = TASK_EQ_ROOT / "llm_translations"
+# Reference roots contain the original handwritten snippets used for comparison.
 REF_ROOTS = {
     "python": TASK_EQ_ROOT / "python",
     "r": TASK_EQ_ROOT / "r",
@@ -23,6 +25,7 @@ DEFAULT_BLACKLIST_FILE = Path(__file__).resolve().parent / "evaluation_blacklist
 
 @dataclass(frozen=True)
 class Candidate:
+    # One translated snippet plus metadata parsed from its directory layout.
     path: Path
     rel_path: Path
     model: str
@@ -38,6 +41,7 @@ class Candidate:
 
 @dataclass(frozen=True)
 class Slice:
+    # One model/prompt/language group used by maintainability evaluation.
     model: str
     prompt_type: str
     language: str
@@ -49,6 +53,7 @@ class Slice:
 
 
 def load_module(path: Path, module_name: str):
+    # Load helper modules by file path because these scripts are run as standalone CLIs.
     spec = importlib.util.spec_from_file_location(module_name, path)
     mod = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
@@ -72,17 +77,21 @@ def discover_candidates(root: Path) -> list[Candidate]:
         for file_path in sorted(root.rglob(f"*{ext}")):
             rel = file_path.relative_to(root)
             parts = rel.parts
+            # Ignore files that do not match the expected translated-snippet layout.
             if len(parts) < 5:
                 continue
             model, prompt_type, lang_dir = parts[0], parts[1], parts[2]
+            # Only base/optimized prompt outputs are part of the evaluation matrix.
             if prompt_type not in {"base", "optimized"}:
                 continue
             if lang_dir not in {"python", "r"}:
                 continue
+            # Avoid counting a file through the wrong extension/language pass.
             if lang_dir != language:
                 continue
 
             category = parts[3]
+            # The filename stem is the task/snippet identifier shared with the reference file.
             snippet_id = Path(parts[-1]).stem
             out.append(
                 Candidate(
@@ -114,6 +123,7 @@ def discover_slices(candidates: list[Candidate]) -> list[Slice]:
 
 
 def parse_csv_set(raw: str) -> set[str]:
+    # CLI filters accept comma-separated values such as "gpt,starcoder".
     vals = [x.strip() for x in raw.split(",") if x.strip()]
     return set(vals)
 
@@ -124,6 +134,7 @@ def load_blacklist(path: Path) -> set[str]:
 
     entries: set[str] = set()
     for raw_line in path.read_text(encoding="utf-8").splitlines():
+        # Inline comments are allowed; only the path before "#" is considered.
         line = raw_line.split("#", 1)[0].strip()
         if line:
             entries.add(line)
@@ -131,6 +142,7 @@ def load_blacklist(path: Path) -> set[str]:
 
 
 def to_rel(path: Path) -> str:
+    # Manifests and blacklists use repo-relative paths when possible.
     try:
         return str(path.relative_to(REPO_ROOT))
     except Exception:
@@ -145,6 +157,7 @@ def filter_candidates(
     blacklist_file: Path,
 ) -> tuple[list[Candidate], set[str], list[str]]:
     if models.strip():
+        # Model/prompt/language filters reduce the matrix before blacklist filtering.
         allowed = parse_csv_set(models)
         candidates = [c for c in candidates if c.model in allowed]
     if prompt_types.strip():
@@ -160,6 +173,7 @@ def filter_candidates(
         kept: list[Candidate] = []
         for c in candidates:
             rel = to_rel(c.path)
+            # Track excluded paths for the run manifest so filtering is auditable.
             if rel in blacklist_entries:
                 blacklisted_candidates.append(rel)
                 continue
@@ -177,6 +191,7 @@ def write_run_manifest(
     blacklist_entries: set[str],
     blacklisted_candidates: list[str],
 ) -> Path:
+    # Every run writes its inputs and filters so results can be reproduced later.
     path = output_dir / "run_manifest.json"
     payload = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
