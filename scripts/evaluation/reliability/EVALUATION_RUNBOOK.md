@@ -62,6 +62,40 @@ Key files:
 - `run_manifest.json`
 - `static/<model>__<prompt_type>__<language>/sonar-scanner.log`
 
+## Reliability score columns
+
+Execution reliability is a behavioral similarity score, not an exact unit-test
+result. For each translated candidate, the evaluator runs the original reference
+script and the candidate script, summarizes the objects created by each run, and
+compares those summaries.
+
+The `execution_scores.csv` component columns mean:
+
+- `kinds`: overlap in broad object categories, such as table, vector, matrix,
+  model, scalar, or other.
+- `shapes`: overlap in table/matrix dimensions, such as number of rows and
+  columns.
+- `vectors`: overlap in lengths of one-dimensional objects, such as pandas
+  Series or R vectors.
+- `models`: overlap in rough model complexity, such as number of fitted
+  parameters, coefficients, or model fields.
+- `numeric`: overlap in rounded numeric summaries, such as means, standard
+  deviations, sums, minima, maxima, or model-related numeric values.
+
+The final `score` is a weighted average of these components:
+
+```text
+kinds   0.25
+shapes  0.25
+vectors 0.15
+models  0.20
+numeric 0.15
+```
+
+If the original/reference script has no data for a component, that component is
+ignored for that row instead of being counted as a match or mismatch. Numeric
+values are matched with the configured tolerances `--atol` and `--rtol`.
+
 ## Optional filters
 
 Run a subset:

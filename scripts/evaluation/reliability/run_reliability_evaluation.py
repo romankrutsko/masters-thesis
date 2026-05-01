@@ -32,6 +32,18 @@ from evaluation_common import (
     to_rel,
 )
 
+# Component weights for the reliability score.
+#
+# The evaluator compares a translated script to the original by first reducing
+# each execution to an object summary, then scoring overlap in these components:
+# - kinds: object categories created by the script, e.g. table/vector/model.
+# - shapes: row/column dimensions of table-like or matrix-like objects.
+# - vectors: lengths of one-dimensional vector/series objects.
+# - models: rough sizes of fitted model objects, e.g. number of params/coefs.
+# - numeric: rounded numeric summaries such as means, sums, minima, maxima.
+#
+# The final score is a weighted average over the components that exist in the
+# original/reference execution. Empty reference components are ignored.
 BASE_WEIGHTS = {
     "kinds": 0.25,
     "shapes": 0.25,
@@ -66,6 +78,14 @@ def collect_numeric_values(x: object, out: list[float]) -> None:
 
 
 def summarize_kind(item: dict) -> tuple[str, tuple[int, int] | tuple[int] | None]:
+    """Map raw Python/R object summaries into comparable categories.
+
+    Returns a broad kind plus optional dimensions:
+    - ("table", (rows, cols)) for DataFrame/data.frame summaries
+    - ("matrix", (rows, cols)) for ndarray/matrix summaries
+    - ("vector", (length,)) for Series/R vector-like summaries
+    - ("model", None) for fitted model-like summaries
+    """
     typ = str(item.get("type", "unknown"))
 
     if typ in {"DataFrame", "data.frame"}:
@@ -99,6 +119,7 @@ def summarize_kind(item: dict) -> tuple[str, tuple[int, int] | tuple[int] | None
 
 
 def extract_profile(var_summary: dict, digits: int) -> dict[str, Any]:
+    """Convert a full execution summary into the five scoring components."""
     kinds = Counter()
     shapes = Counter()
     vector_lengths = Counter()
@@ -118,6 +139,9 @@ def extract_profile(var_summary: dict, digits: int) -> dict[str, Any]:
         if kind == "vector" and shape is not None and len(shape) == 1:
             vector_lengths[(int(shape[0]),)] += 1
 
+        # Model-size counts are intentionally coarse. They check whether a
+        # candidate produced model objects of comparable complexity, not whether
+        # every model parameter is exactly equal.
         if "params" in obj and isinstance(obj["params"], list):
             model_sizes[len(obj["params"])] += 1
         if "coef" in obj:
@@ -146,6 +170,7 @@ def extract_profile(var_summary: dict, digits: int) -> dict[str, Any]:
 
 
 def counter_overlap(ref: Counter, cand: Counter) -> float:
+    """Fraction of reference counts matched by candidate counts."""
     total = sum(ref.values())
     if total == 0:
         return 1.0
@@ -154,6 +179,7 @@ def counter_overlap(ref: Counter, cand: Counter) -> float:
 
 
 def numeric_overlap(ref_vals: list[float], cand_vals: list[float], atol: float, rtol: float) -> float:
+    """Greedy match of rounded reference numbers against candidate numbers."""
     if not ref_vals:
         return 1.0
     if not cand_vals:
@@ -181,6 +207,7 @@ def numeric_overlap(ref_vals: list[float], cand_vals: list[float], atol: float, 
 
 
 def weighted_score(ref_profile: dict[str, Any], cand_profile: dict[str, Any], atol: float, rtol: float) -> tuple[float, dict[str, float], dict[str, float]]:
+    """Return final reliability score and per-component scores."""
     components = {
         "kinds": counter_overlap(ref_profile["kinds"], cand_profile["kinds"]),
         "shapes": counter_overlap(ref_profile["shapes"], cand_profile["shapes"]),

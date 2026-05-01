@@ -48,6 +48,7 @@ def ensure_text(value: str | bytes | None) -> str:
 
 
 def run_python_baseline(script_path: Path, python_bin: str, timeout_sec: float | None = None) -> dict:
+    # Run the target in a clean helper process so crashes, imports, and globals from one candidate cannot leak into the evaluator or the next candidate.
     helper = r'''
 import contextlib
 import io
@@ -55,6 +56,7 @@ import json
 import math
 import os
 import runpy
+import sys
 import types
 from pathlib import Path
 
@@ -180,7 +182,13 @@ os.chdir(repo_root)
 
 buffer = io.StringIO()
 with contextlib.redirect_stdout(buffer):
-    ns = runpy.run_path(str(script_path))
+    # Match `python script.py`: run guarded main blocks and expose a normal argv.
+    old_argv = sys.argv[:]
+    sys.argv = [str(script_path)]
+    try:
+        ns = runpy.run_path(str(script_path), run_name="__main__")
+    finally:
+        sys.argv = old_argv
 stdout = buffer.getvalue()
 
 var_summary = {}
@@ -289,6 +297,7 @@ print(json.dumps(sanitize(result)))
 
 
 def run_r_baseline(script_path: Path, rscript_bin: str, timeout_sec: float | None = None) -> dict:
+    # The R path is embedded into a temporary wrapper script.
     escaped_path = str(script_path).replace("'", "\\'")
     wrapper = f"""
 options(stringsAsFactors = FALSE)
@@ -397,6 +406,8 @@ jsonlite::write_json(out, path = stdout(), auto_unbox = TRUE, na = "null")
 cat('\\n---SUMMARY_JSON_END---\\n')
 """
 
+    # Source the candidate inside a wrapper so we can capture both its printed
+    # output and a JSON summary of the objects it created.
     with tempfile.NamedTemporaryFile("w", suffix=".R", delete=False) as f:
         f.write(wrapper)
         wrapper_path = Path(f.name)
