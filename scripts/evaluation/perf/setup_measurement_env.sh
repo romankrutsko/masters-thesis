@@ -53,6 +53,17 @@ require_command() {
   fi
 }
 
+# Authenticate sudo once before privileged setup/restore steps so the run does not
+# block later on the first governor or CPU online/offline change.
+refresh_sudo_or_exit() {
+  require_command sudo
+  echo "Authenticating sudo before privileged measurement setup ..."
+  if ! sudo -v; then
+    echo "sudo authentication failed." >&2
+    exit 1
+  fi
+}
+
 # Disable desktop idle/sleep behavior so long benchmark runs are not interrupted.
 set_gnome_power_settings() {
   if command -v gsettings >/dev/null 2>&1; then
@@ -199,8 +210,10 @@ do_setup() {
         echo "Unknown setup option: $1" >&2
         exit 1
         ;;
-    esac
+      esac
   done
+
+  refresh_sudo_or_exit
 
   # Stabilize power, display, network, and CPU-frequency behavior before measuring.
   set_performance_profile
@@ -251,8 +264,10 @@ do_restore() {
         echo "Unknown restore option: $1" >&2
         exit 1
         ;;
-    esac
+      esac
   done
+
+  refresh_sudo_or_exit
 
   # Only re-enable CPUs that the caller explicitly names.
   local cpu
