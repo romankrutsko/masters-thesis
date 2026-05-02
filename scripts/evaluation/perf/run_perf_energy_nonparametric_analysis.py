@@ -66,6 +66,26 @@ def cliffs_delta(x: np.ndarray, y: np.ndarray) -> float:
     return (np.sum(diffs > 0) - np.sum(diffs < 0)) / (x.size * y.size)
 
 
+def cliffs_delta_magnitude(delta: float) -> str:
+    # Common Romano-style thresholds for Cliff's delta.
+    abs_delta = abs(delta)
+    if abs_delta < 0.147:
+        return "negligible"
+    if abs_delta < 0.33:
+        return "small"
+    if abs_delta < 0.474:
+        return "medium"
+    return "large"
+
+
+def cliffs_delta_direction(delta: float, metric: str) -> str:
+    if delta > 0:
+        return f"candidate_higher_{metric}"
+    if delta < 0:
+        return f"candidate_lower_{metric}"
+    return "no_direction"
+
+
 def benjamini_hochberg(p_values: pd.Series) -> pd.Series:
     # FDR correction controls false discoveries across many candidate tests.
     p = p_values.to_numpy(dtype=float)
@@ -129,7 +149,11 @@ def run_mann_whitney(original: pd.DataFrame, translations: pd.DataFrame) -> pd.D
             row[f"{metric}_rank_biserial"] = rank_biserial_from_u(
                 float(test.statistic), len(x), len(y)
             )
-            row[f"{metric}_cliffs_delta"] = float(cliffs_delta(x, y))
+            delta = float(cliffs_delta(x, y))
+            row[f"{metric}_cliffs_delta"] = delta
+            row[f"{metric}_cliffs_delta_abs"] = abs(delta)
+            row[f"{metric}_cliffs_delta_magnitude"] = cliffs_delta_magnitude(delta)
+            row[f"{metric}_cliffs_delta_direction"] = cliffs_delta_direction(delta, metric)
 
         rows.append(row)
 

@@ -26,6 +26,7 @@ DEFAULT_BLACKLIST_FILE = Path(__file__).resolve().parent / "evaluation_blacklist
 @dataclass(frozen=True)
 class Candidate:
     # One translated snippet plus metadata parsed from its directory layout.
+    script_id: str
     path: Path
     rel_path: Path
     model: str
@@ -71,41 +72,43 @@ def ensure_dir(path: Path) -> None:
 
 def discover_candidates(root: Path) -> list[Candidate]:
     out: list[Candidate] = []
+    canonical_index = 0
 
     # Expected layout: model/prompt_type/language/category/file
-    for ext, language in ((".py", "python"), (".R", "r"), (".r", "r")):
-        for file_path in sorted(root.rglob(f"*{ext}")):
-            rel = file_path.relative_to(root)
-            parts = rel.parts
-            # Ignore files that do not match the expected translated-snippet layout.
-            if len(parts) < 5:
-                continue
-            model, prompt_type, lang_dir = parts[0], parts[1], parts[2]
-            # Only base/optimized prompt outputs are part of the evaluation matrix.
-            if prompt_type not in {"base", "optimized"}:
-                continue
-            if lang_dir not in {"python", "r"}:
-                continue
-            # Avoid counting a file through the wrong extension/language pass.
-            if lang_dir != language:
-                continue
+    for file_path in sorted(root.rglob("*")):
+        if not file_path.is_file() or file_path.suffix.lower() not in {".py", ".r"}:
+            continue
 
-            category = parts[3]
-            # The filename stem is the task/snippet identifier shared with the reference file.
-            snippet_id = Path(parts[-1]).stem
-            out.append(
-                Candidate(
-                    path=file_path,
-                    rel_path=rel,
-                    model=model,
-                    prompt_type=prompt_type,
-                    language=language,
-                    category=category,
-                    snippet_id=snippet_id,
-                )
+        rel = file_path.relative_to(root)
+        parts = rel.parts
+        # Ignore files that do not match the expected translated-snippet layout.
+        if len(parts) < 5:
+            continue
+        model, prompt_type, lang_dir = parts[0], parts[1], parts[2]
+        # Only base/optimized prompt outputs are part of the evaluation matrix.
+        if prompt_type not in {"base", "optimized"}:
+            continue
+        if lang_dir not in {"python", "r"}:
+            continue
+
+        canonical_index += 1
+        category = parts[3]
+        # The filename stem is the task/snippet identifier shared with the reference file.
+        snippet_id = Path(parts[-1]).stem
+        out.append(
+            Candidate(
+                script_id=f"script_{canonical_index}",
+                path=file_path,
+                rel_path=rel,
+                model=model,
+                prompt_type=prompt_type,
+                language=lang_dir,
+                category=category,
+                snippet_id=snippet_id,
             )
+        )
 
-    return sorted(out, key=lambda c: (c.model, c.prompt_type, c.language, c.category, c.snippet_id))
+    return out
 
 
 def discover_slices(candidates: list[Candidate]) -> list[Slice]:
@@ -212,6 +215,7 @@ def write_run_manifest(
             "sonar_scanner_bin": getattr(args, "sonar_scanner_bin", ""),
             "sonar_host_url": getattr(args, "sonar_host_url", ""),
             "sonar_project_prefix": getattr(args, "sonar_project_prefix", ""),
+            "granularity": getattr(args, "granularity", ""),
             "output_dir": str(output_dir),
             "models": getattr(args, "models", ""),
             "prompt_types": getattr(args, "prompt_types", ""),

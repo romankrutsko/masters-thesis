@@ -26,6 +26,7 @@ if str(REPO_IMPORT_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_IMPORT_ROOT))
 
 from scripts.evaluation.helpers.evaluation_common import (
+    Candidate,
     DEFAULT_BLACKLIST_FILE,
     DEFAULT_OUTPUT_ROOT,
     REPO_ROOT,
@@ -83,74 +84,66 @@ def poll_sonar_analysis(sonar_host_url: str, ce_task_id: str, token: str | None,
     return last or {}
 
 
-def generate_lintr_external_issues(slice_root: Path, out_json: Path, rscript_bin: str, repo_root: Path) -> tuple[bool, str]:
+def generate_lintr_external_issues(
+    slice_root: Path,
+    out_json: Path,
+    rscript_bin: str,
+    repo_root: Path,
+    target_file: Path | None = None,
+) -> tuple[bool, str]:
     env = os.environ.copy()
     env["LINTR_SLICE_ROOT"] = str(slice_root)
     env["LINTR_OUT_JSON"] = str(out_json)
     env["LINTR_REPO_ROOT"] = str(repo_root)
+    if target_file is not None:
+        env["LINTR_TARGET_FILE"] = str(target_file)
     proc = subprocess.run([rscript_bin, str(LINTR_TO_SONAR_HELPER)], capture_output=True, text=True, check=False, env=env)
     if proc.returncode == 0:
         return True, ""
     return False, (proc.stderr or proc.stdout or "lintr failed").strip()
 
 
-def run_sonar_for_slice(
-    sl: Slice,
-    output_dir: Path,
-    sonar_scanner_bin: str,
-    sonar_host_url: str,
-    sonar_token: str | None,
-    sonar_project_prefix: str,
-    rscript_bin: str,
-) -> dict[str, Any]:
-    slice_out = output_dir / "static" / sl.slug
-    ensure_dir(slice_out)
-
-    project_key = sanitize_key(f"{sonar_project_prefix}_{sl.model}_{sl.prompt_type}_{sl.language}")
-    project_name = f"{sonar_project_prefix}:{sl.model}:{sl.prompt_type}:{sl.language}"
-
-    scanner_log = slice_out / "sonar-scanner.log"
-    report_task = sl.root / ".scannerwork" / "report-task.txt"
-
-    properties = [
-        f"-Dsonar.projectKey={project_key}",
-        f"-Dsonar.projectName={project_name}",
-        "-Dsonar.projectVersion=1",
-        f"-Dsonar.host.url={sonar_host_url}",
-        "-Dsonar.sourceEncoding=UTF-8",
-        "-Dsonar.scm.disabled=true",
-        "-Dsonar.sources=.",
+def sonar_metrics() -> list[str]:
+    return [
+        "bugs",
+        "vulnerabilities",
+        "code_smells",
+        "reliability_rating",
+        "security_rating",
+        "sqale_rating",
+        "duplicated_lines_density",
+        "ncloc",
+        "coverage",
     ]
 
-    if sl.language == "python":
-        properties.append("-Dsonar.inclusions=**/*.py")
-    else:
-        # Sonar is the reporting layer here, but R lint findings come from lintr.
-        properties.append("-Dsonar.inclusions=**/*.R,**/*.r")
-        lintr_report = slice_out / "lintr-sonar-external-issues.json"
-        ok, msg = generate_lintr_external_issues(sl.root, lintr_report, rscript_bin=rscript_bin, repo_root=REPO_ROOT)
-        if ok:
-            properties.append(f"-Dsonar.externalIssuesReportPaths={lintr_report}")
-        else:
-            (slice_out / "lintr-error.log").write_text(msg + "\n", encoding="utf-8")
 
-    cmd = [sonar_scanner_bin] + properties
-    env = os.environ.copy()
-    if sonar_token:
-        env["SONAR_TOKEN"] = sonar_token
-
-    # Run inside the slice root so relative paths line up with Sonar metadata.
-    proc = subprocess.run(cmd, cwd=str(sl.root), capture_output=True, text=True, check=False, env=env)
-    scanner_log.write_text((proc.stdout or "") + "\n" + (proc.stderr or ""), encoding="utf-8")
-
-    row: dict[str, Any] = {
-        "model": sl.model,
-        "prompt_type": sl.prompt_type,
-        "language": sl.language,
-        "slice_root": to_rel(sl.root),
+def empty_result_row(
+    *,
+    model: str,
+    prompt_type: str,
+    language: str,
+    analysis_granularity: str,
+    source_root: Path,
+    project_key: str,
+    scanner_log: Path,
+    script_id: str = "",
+    category: str = "",
+    snippet_id: str = "",
+    script_path: Path | None = None,
+) -> dict[str, Any]:
+    return {
+        "script_id": script_id,
+        "model": model,
+        "prompt_type": prompt_type,
+        "language": language,
+        "category": category,
+        "snippet_id": snippet_id,
+        "script_path": to_rel(script_path) if script_path is not None else "",
+        "analysis_granularity": analysis_granularity,
+        "source_root": to_rel(source_root),
         "project_key": project_key,
-        "sonar_status": "ok" if proc.returncode == 0 else "scanner_error",
-        "sonar_scanner_exit_code": proc.returncode,
+        "sonar_status": "",
+        "sonar_scanner_exit_code": "",
         "quality_gate": "",
         "bugs": "",
         "vulnerabilities": "",
@@ -166,6 +159,19 @@ def run_sonar_for_slice(
         "error": "",
         "scanner_log": to_rel(scanner_log),
     }
+
+
+def finish_sonar_row(
+    row: dict[str, Any],
+    *,
+    proc: subprocess.CompletedProcess[str],
+    report_task: Path,
+    sonar_host_url: str,
+    sonar_token: str | None,
+    project_key: str,
+) -> dict[str, Any]:
+    row["sonar_status"] = "ok" if proc.returncode == 0 else "scanner_error"
+    row["sonar_scanner_exit_code"] = proc.returncode
 
     if proc.returncode != 0:
         err = (proc.stderr or proc.stdout or "sonar-scanner failed").splitlines()
@@ -206,21 +212,10 @@ def run_sonar_for_slice(
         qg = sonar_api_get(f"{sonar_host_url.rstrip('/')}/api/qualitygates/project_status", sonar_token, {"analysisId": analysis_id})
         row["quality_gate"] = qg.get("projectStatus", {}).get("status", "")
 
-        metrics = [
-            "bugs",
-            "vulnerabilities",
-            "code_smells",
-            "reliability_rating",
-            "security_rating",
-            "sqale_rating",
-            "duplicated_lines_density",
-            "ncloc",
-            "coverage",
-        ]
         ms = sonar_api_get(
             f"{sonar_host_url.rstrip('/')}/api/measures/component",
             sonar_token,
-            {"component": project_key, "metricKeys": ",".join(metrics)},
+            {"component": project_key, "metricKeys": ",".join(sonar_metrics())},
         )
         for m in ms.get("component", {}).get("measures", []):
             key = m.get("metric")
@@ -234,8 +229,8 @@ def run_sonar_for_slice(
     return row
 
 
-def evaluate_static(
-    slices: list[Slice],
+def run_sonar_for_slice(
+    sl: Slice,
     output_dir: Path,
     sonar_scanner_bin: str,
     sonar_host_url: str,
@@ -243,14 +238,165 @@ def evaluate_static(
     sonar_project_prefix: str,
     rscript_bin: str,
 ) -> dict[str, Any]:
-    rows: list[dict[str, Any]] = []
-    total = len(slices)
+    slice_out = output_dir / "static" / sl.slug
+    ensure_dir(slice_out)
 
-    for idx, sl in enumerate(slices, start=1):
-        print(f"[maintainability {idx}/{total}] {sl.model}/{sl.prompt_type}/{sl.language}")
-        rows.append(
-            run_sonar_for_slice(
-                sl,
+    project_key = sanitize_key(f"{sonar_project_prefix}_{sl.model}_{sl.prompt_type}_{sl.language}")
+    project_name = f"{sonar_project_prefix}:{sl.model}:{sl.prompt_type}:{sl.language}"
+
+    scanner_log = slice_out / "sonar-scanner.log"
+    report_task = sl.root / ".scannerwork" / "report-task.txt"
+    row = empty_result_row(
+        model=sl.model,
+        prompt_type=sl.prompt_type,
+        language=sl.language,
+        analysis_granularity="slice",
+        source_root=sl.root,
+        project_key=project_key,
+        scanner_log=scanner_log,
+    )
+
+    properties = [
+        f"-Dsonar.projectKey={project_key}",
+        f"-Dsonar.projectName={project_name}",
+        "-Dsonar.projectVersion=1",
+        f"-Dsonar.host.url={sonar_host_url}",
+        "-Dsonar.sourceEncoding=UTF-8",
+        "-Dsonar.scm.disabled=true",
+        "-Dsonar.sources=.",
+    ]
+
+    if sl.language == "python":
+        properties.append("-Dsonar.inclusions=**/*.py")
+    else:
+        # Sonar is the reporting layer here, but R lint findings come from lintr.
+        properties.append("-Dsonar.inclusions=**/*.R,**/*.r")
+        lintr_report = slice_out / "lintr-sonar-external-issues.json"
+        ok, msg = generate_lintr_external_issues(sl.root, lintr_report, rscript_bin=rscript_bin, repo_root=REPO_ROOT)
+        if ok:
+            properties.append(f"-Dsonar.externalIssuesReportPaths={lintr_report}")
+        else:
+            (slice_out / "lintr-error.log").write_text(msg + "\n", encoding="utf-8")
+
+    cmd = [sonar_scanner_bin] + properties
+    env = os.environ.copy()
+    if sonar_token:
+        env["SONAR_TOKEN"] = sonar_token
+
+    # Run inside the slice root so relative paths line up with Sonar metadata.
+    proc = subprocess.run(cmd, cwd=str(sl.root), capture_output=True, text=True, check=False, env=env)
+    scanner_log.write_text((proc.stdout or "") + "\n" + (proc.stderr or ""), encoding="utf-8")
+
+    return finish_sonar_row(
+        row,
+        proc=proc,
+        report_task=report_task,
+        sonar_host_url=sonar_host_url,
+        sonar_token=sonar_token,
+        project_key=project_key,
+    )
+
+
+def run_sonar_for_candidate(
+    candidate: Candidate,
+    output_dir: Path,
+    sonar_scanner_bin: str,
+    sonar_host_url: str,
+    sonar_token: str | None,
+    sonar_project_prefix: str,
+    rscript_bin: str,
+) -> dict[str, Any]:
+    snippet_out = output_dir / "static" / candidate.slug
+    ensure_dir(snippet_out)
+
+    project_key = sanitize_key(f"{sonar_project_prefix}_{candidate.script_id}_{candidate.slug}")
+    project_name = (
+        f"{sonar_project_prefix}:{candidate.model}:{candidate.prompt_type}:{candidate.language}:"
+        f"{candidate.category}:{candidate.snippet_id}"
+    )
+
+    source_root = candidate.path.parent
+    source_name = candidate.path.name
+    scanner_log = snippet_out / "sonar-scanner.log"
+    report_task = source_root / ".scannerwork" / "report-task.txt"
+    row = empty_result_row(
+        model=candidate.model,
+        prompt_type=candidate.prompt_type,
+        language=candidate.language,
+        category=candidate.category,
+        snippet_id=candidate.snippet_id,
+        script_path=candidate.path,
+        script_id=candidate.script_id,
+        analysis_granularity="snippet",
+        source_root=source_root,
+        project_key=project_key,
+        scanner_log=scanner_log,
+    )
+
+    properties = [
+        f"-Dsonar.projectKey={project_key}",
+        f"-Dsonar.projectName={project_name}",
+        "-Dsonar.projectVersion=1",
+        f"-Dsonar.host.url={sonar_host_url}",
+        "-Dsonar.sourceEncoding=UTF-8",
+        "-Dsonar.scm.disabled=true",
+        f"-Dsonar.sources={source_name}",
+    ]
+
+    if candidate.language == "python":
+        properties.append(f"-Dsonar.inclusions={source_name}")
+    else:
+        properties.append(f"-Dsonar.inclusions={source_name}")
+        lintr_report = snippet_out / "lintr-sonar-external-issues.json"
+        ok, msg = generate_lintr_external_issues(
+            source_root,
+            lintr_report,
+            rscript_bin=rscript_bin,
+            repo_root=REPO_ROOT,
+            target_file=candidate.path,
+        )
+        if ok:
+            properties.append(f"-Dsonar.externalIssuesReportPaths={lintr_report}")
+        else:
+            (snippet_out / "lintr-error.log").write_text(msg + "\n", encoding="utf-8")
+
+    cmd = [sonar_scanner_bin] + properties
+    env = os.environ.copy()
+    if sonar_token:
+        env["SONAR_TOKEN"] = sonar_token
+
+    proc = subprocess.run(cmd, cwd=str(source_root), capture_output=True, text=True, check=False, env=env)
+    scanner_log.write_text((proc.stdout or "") + "\n" + (proc.stderr or ""), encoding="utf-8")
+
+    return finish_sonar_row(
+        row,
+        proc=proc,
+        report_task=report_task,
+        sonar_host_url=sonar_host_url,
+        sonar_token=sonar_token,
+        project_key=project_key,
+    )
+
+
+def evaluate_static(
+    targets: list[Candidate] | list[Slice],
+    output_dir: Path,
+    sonar_scanner_bin: str,
+    sonar_host_url: str,
+    sonar_token: str | None,
+    sonar_project_prefix: str,
+    rscript_bin: str,
+    granularity: str,
+) -> dict[str, Any]:
+    rows: list[dict[str, Any]] = []
+    total = len(targets)
+
+    for idx, target in enumerate(targets, start=1):
+        if granularity == "slice":
+            assert isinstance(target, Slice)
+            print(f"[maintainability {idx}/{total}] {target.model}/{target.prompt_type}/{target.language}")
+            row = run_sonar_for_slice(
+                target,
                 output_dir=output_dir,
                 sonar_scanner_bin=sonar_scanner_bin,
                 sonar_host_url=sonar_host_url,
@@ -258,17 +404,37 @@ def evaluate_static(
                 sonar_project_prefix=sonar_project_prefix,
                 rscript_bin=rscript_bin,
             )
-        )
+        else:
+            assert isinstance(target, Candidate)
+            print(
+                f"[maintainability {idx}/{total}] "
+                f"{target.model}/{target.prompt_type}/{target.language}/{target.category}/{target.snippet_id}"
+            )
+            row = run_sonar_for_candidate(
+                target,
+                output_dir=output_dir,
+                sonar_scanner_bin=sonar_scanner_bin,
+                sonar_host_url=sonar_host_url,
+                sonar_token=sonar_token,
+                sonar_project_prefix=sonar_project_prefix,
+                rscript_bin=rscript_bin,
+            )
+        rows.append(row)
         print(f"  -> status={rows[-1].get('sonar_status', '')}")
 
     csv_path = output_dir / "static_sonar_results.csv"
     json_path = output_dir / "static_sonar_results.json"
 
     fields = [
+        "script_id",
         "model",
         "prompt_type",
         "language",
-        "slice_root",
+        "category",
+        "snippet_id",
+        "script_path",
+        "analysis_granularity",
+        "source_root",
         "project_key",
         "sonar_status",
         "sonar_scanner_exit_code",
@@ -295,7 +461,8 @@ def evaluate_static(
 
     payload = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "slice_count": len(slices),
+        "granularity": granularity,
+        "target_count": len(targets),
         "rows": rows,
     }
     json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -310,6 +477,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--sonar-host-url", default=os.environ.get("SONAR_HOST_URL", "http://localhost:9000"))
     parser.add_argument("--sonar-token", default=os.environ.get("SONAR_TOKEN", ""))
     parser.add_argument("--sonar-project-prefix", default="masters_thesis_translations")
+    parser.add_argument(
+        "--granularity",
+        choices=("snippet", "slice"),
+        default="snippet",
+        help="Analyze each candidate file separately, or keep the old model/prompt/language slice behavior.",
+    )
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--run-id", default="")
     parser.add_argument("--models", default="")
@@ -344,14 +517,16 @@ def run(args: argparse.Namespace) -> int:
         print(f"Blacklist file: {args.blacklist_file}")
         print(f"Candidates excluded by blacklist: {len(blacklisted_candidates)}")
 
+    targets = discover_slices(candidates) if args.granularity == "slice" else candidates
     result = evaluate_static(
-        discover_slices(candidates),
+        targets,
         output_dir=output_dir,
         sonar_scanner_bin=args.sonar_scanner_bin,
         sonar_host_url=args.sonar_host_url,
         sonar_token=args.sonar_token.strip() or None,
         sonar_project_prefix=args.sonar_project_prefix,
         rscript_bin=args.rscript_bin,
+        granularity=args.granularity,
     )
     print(f"Maintainability CSV: {result['csv']}")
     print(f"Maintainability JSON: {result['json']}")

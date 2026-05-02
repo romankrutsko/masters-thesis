@@ -8,8 +8,12 @@ if (!requireNamespace("jsonlite", quietly = TRUE)) {
 slice_root <- normalizePath(Sys.getenv("LINTR_SLICE_ROOT"), winslash = "/", mustWork = TRUE)
 out_json <- Sys.getenv("LINTR_OUT_JSON")
 repo_root <- normalizePath(Sys.getenv("LINTR_REPO_ROOT"), winslash = "/", mustWork = TRUE)
+target_file <- Sys.getenv("LINTR_TARGET_FILE")
 if (!nzchar(out_json)) {
   stop("LINTR_OUT_JSON must be set.")
+}
+if (nzchar(target_file)) {
+  target_file <- normalizePath(target_file, winslash = "/", mustWork = TRUE)
 }
 
 resolve_issue_path <- function(path) {
@@ -31,7 +35,11 @@ to_slice_rel <- function(path) {
   }
 }
 
-linters <- lintr::lint_dir(slice_root)
+linters <- if (nzchar(target_file)) {
+  lintr::lint(target_file)
+} else {
+  lintr::lint_dir(slice_root)
+}
 issues <- list()
 line_cache <- new.env(parent = emptyenv())
 
