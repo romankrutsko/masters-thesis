@@ -1,0 +1,35 @@
+{
+  "generated_at_utc": "2026-05-02T13:44:22.818948+00:00",
+  "granularity": "snippet",
+  "target_count": 1,
+  "rows": [
+    {
+      "script_id": "script_109",
+      "model": "starcoder",
+      "prompt_type": "base",
+      "language": "r",
+      "category": "machine_learning_workflows",
+      "snippet_id": "01_pipeline_cv_gridsearch_classification",
+      "script_path": "task_equivalents/llm_translations/starcoder/base/r/machine_learning_workflows/01_pipeline_cv_gridsearch_classification.R",
+      "analysis_granularity": "snippet",
+      "source_root": "task_equivalents/llm_translations/starcoder/base/r/machine_learning_workflows",
+      "project_key": "masters_thesis_translations_script_109_starcoder__base__r__machine_learning_workflows__01_pipeline_cv_gridsearch_classification",
+      "sonar_status": "ok",
+      "sonar_scanner_exit_code": 0,
+      "quality_gate": "OK",
+      "bugs": "0",
+      "vulnerabilities": "0",
+      "code_smells": "26",
+      "reliability_rating": "1.0",
+      "security_rating": "1.0",
+      "sqale_rating": "1.0",
+      "duplicated_lines_density": "0.0",
+      "ncloc": "",
+      "coverage": "",
+      "analysis_id": "af8f6896-e645-437e-8a90-8fceabd207a2",
+      "ce_task_id": "e1d48afc-d021-4410-9a27-cf946859327f",
+      "error": "",
+      "scanner_log": "task_equivalents/evaluation_outputs/maintainability_single_starcoder_base_r_20260502T134412Z/static/starcoder__base__r__machine_learning_workflows__01_pipeline_cv_gridsearch_classification/sonar-scanner.log"
+    }
+  ]
+}
