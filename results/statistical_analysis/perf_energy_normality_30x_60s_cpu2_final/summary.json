@@ -1,0 +1,56 @@
+{
+  "total_rows": 303,
+  "tested_rows": 303,
+  "untested_rows": 0,
+  "normality_rejected_0_05": 93,
+  "by_dataset_metric": [
+    {
+      "dataset": "original",
+      "metric": "avg_power_watts",
+      "tested_groups": 16,
+      "normality_rejected_0_05": 4,
+      "normality_rejected_share": 0.25,
+      "median_shapiro_p_value": 0.445250594889608
+    },
+    {
+      "dataset": "original",
+      "metric": "elapsed_seconds",
+      "tested_groups": 16,
+      "normality_rejected_0_05": 11,
+      "normality_rejected_share": 0.6875,
+      "median_shapiro_p_value": 0.0204061574607061
+    },
+    {
+      "dataset": "original",
+      "metric": "energy_joules",
+      "tested_groups": 16,
+      "normality_rejected_0_05": 7,
+      "normality_rejected_share": 0.4375,
+      "median_shapiro_p_value": 0.15754037618351246
+    },
+    {
+      "dataset": "translation",
+      "metric": "avg_power_watts",
+      "tested_groups": 85,
+      "normality_rejected_0_05": 13,
+      "normality_rejected_share": 0.15294117647058825,
+      "median_shapiro_p_value": 0.3087968500125213
+    },
+    {
+      "dataset": "translation",
+      "metric": "elapsed_seconds",
+      "tested_groups": 85,
+      "normality_rejected_0_05": 43,
+      "normality_rejected_share": 0.5058823529411764,
+      "median_shapiro_p_value": 0.04149270683058289
+    },
+    {
+      "dataset": "translation",
+      "metric": "energy_joules",
+      "tested_groups": 85,
+      "normality_rejected_0_05": 15,
+      "normality_rejected_share": 0.17647058823529413,
+      "median_shapiro_p_value": 0.32567594309711334
+    }
+  ]
+}
