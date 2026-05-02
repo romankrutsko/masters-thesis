@@ -1,0 +1,29 @@
+{
+  "generated_at_utc": "2026-05-02T16:56:34.196708+00:00",
+  "started_at_utc": "2026-05-02T15:19:16.246533+00:00",
+  "base_dir": "/home/romakrut/PycharmProjects/masters-thesis/task_equivalents/llm_translations",
+  "run_dir": "/home/romakrut/PycharmProjects/masters-thesis/results/perf_energy_runs/translations_5x_nowarmup_cpu2_long",
+  "output_csv": "/home/romakrut/PycharmProjects/masters-thesis/results/perf_energy_runs/translations_5x_nowarmup_cpu2_long/perf_energy_runs.csv",
+  "output_json": "/home/romakrut/PycharmProjects/masters-thesis/results/perf_energy_runs/translations_5x_nowarmup_cpu2_long/perf_energy_summary.json",
+  "runs_per_script": 5,
+  "warmup_runs": 0,
+  "pause_between_runs_seconds": 1.0,
+  "pause_seconds": 0.0,
+  "timeout_seconds": 1800000.0,
+  "randomized_script_order": true,
+  "random_seed": 20260413,
+  "drop_caches_between_scripts": true,
+  "blacklist_file": "/home/romakrut/PycharmProjects/masters-thesis/scripts/evaluation/helpers/blacklist_all_except_long_running.txt",
+  "scripts_discovered": 1,
+  "scripts_skipped_by_blacklist": 127,
+  "execution_order": [
+    "script_109"
+  ],
+  "completed_scripts": 1,
+  "remaining_scripts": 0,
+  "measured_runs_attempted": 5,
+  "successful_runs": 5,
+  "failed_runs": 0,
+  "status": "completed",
+  "current_script": ""
+}
