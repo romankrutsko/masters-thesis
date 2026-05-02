@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,9 +13,9 @@ from scipy import stats
 
 
 ROOT = Path(__file__).resolve().parents[3]
-ORIGINAL_CSV = ROOT / "results/perf_energy_runs/original_30x_60s_cpu2/perf_energy_runs.csv"
-TRANSLATIONS_CSV = ROOT / "results/perf_energy_runs/run_30x_60s_cpu2/perf_energy_runs.csv"
-OUTPUT_DIR = ROOT / "results/statistical_analysis/nonparametric_perf_energy"
+DEFAULT_ORIGINAL_CSV = ROOT / "results/perf_energy_runs/original_30x_60s_cpu2/perf_energy_runs.csv"
+DEFAULT_TRANSLATIONS_CSV = ROOT / "results/perf_energy_runs/run_30x_60s_cpu2/perf_energy_runs.csv"
+DEFAULT_OUTPUT_DIR = ROOT / "results/statistical_analysis/nonparametric_perf_energy"
 
 # These columns identify the original task that a translation should be compared with.
 MATCH_KEYS = ["language", "category", "snippet"]
@@ -29,10 +30,20 @@ class SpearmanGroup:
     columns: list[str]
 
 
-def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Run nonparametric runtime/energy comparisons against original baselines."
+    )
+    parser.add_argument("--original-csv", type=Path, default=DEFAULT_ORIGINAL_CSV)
+    parser.add_argument("--translations-csv", type=Path, default=DEFAULT_TRANSLATIONS_CSV)
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    return parser.parse_args()
+
+
+def load_data(original_csv: Path, translations_csv: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     # Only successful benchmark rows are valid inputs for statistical comparison.
-    original = pd.read_csv(ORIGINAL_CSV)
-    translations = pd.read_csv(TRANSLATIONS_CSV)
+    original = pd.read_csv(original_csv)
+    translations = pd.read_csv(translations_csv)
 
     original = original.loc[original["status"] == "ok"].copy()
     translations = translations.loc[translations["status"] == "ok"].copy()
@@ -192,21 +203,23 @@ def build_summary(mw: pd.DataFrame, sp: pd.DataFrame) -> dict[str, object]:
 
 
 def main() -> None:
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    args = parse_args()
+    output_dir = args.output_dir.resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    original, translations = load_data()
+    original, translations = load_data(args.original_csv.resolve(), args.translations_csv.resolve())
     mann_whitney = run_mann_whitney(original, translations)
     spearman = run_spearman(original, translations)
     summary = build_summary(mann_whitney, spearman)
 
-    mann_whitney.to_csv(OUTPUT_DIR / "mann_whitney_vs_original.csv", index=False)
-    spearman.to_csv(OUTPUT_DIR / "spearman_elapsed_vs_energy.csv", index=False)
-    with open(OUTPUT_DIR / "summary.json", "w", encoding="utf-8") as handle:
+    mann_whitney.to_csv(output_dir / "mann_whitney_vs_original.csv", index=False)
+    spearman.to_csv(output_dir / "spearman_elapsed_vs_energy.csv", index=False)
+    with open(output_dir / "summary.json", "w", encoding="utf-8") as handle:
         json.dump(summary, handle, indent=2)
 
-    print(f"Wrote {OUTPUT_DIR / 'mann_whitney_vs_original.csv'}")
-    print(f"Wrote {OUTPUT_DIR / 'spearman_elapsed_vs_energy.csv'}")
-    print(f"Wrote {OUTPUT_DIR / 'summary.json'}")
+    print(f"Wrote {output_dir / 'mann_whitney_vs_original.csv'}")
+    print(f"Wrote {output_dir / 'spearman_elapsed_vs_energy.csv'}")
+    print(f"Wrote {output_dir / 'summary.json'}")
     print(json.dumps(summary, indent=2))
 
 
