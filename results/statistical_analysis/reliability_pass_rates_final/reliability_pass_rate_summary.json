@@ -1,0 +1,15 @@
+{
+  "input_csv": "/Users/romankrutsko/PycharmProjects/masters-thesis/task_equivalents/evaluation_outputs/reliability_all_including_blacklisted_no_timeout_with_rlibs_20260501T143518Z/execution_scores.csv",
+  "total": 128,
+  "passed": 86,
+  "failed": 42,
+  "pass_rate": 0.671875,
+  "pass_rate_percent": 67.1875,
+  "mean_reliability_score": 0.5312500000000001,
+  "mean_reliability_score_percent": 53.125000000000014,
+  "mean_score_among_passed": 0.7906976744186048,
+  "by_model_csv": "/Users/romankrutsko/PycharmProjects/masters-thesis/results/statistical_analysis/reliability_pass_rates_final/reliability_pass_rate_by_model.csv",
+  "by_language_csv": "/Users/romankrutsko/PycharmProjects/masters-thesis/results/statistical_analysis/reliability_pass_rates_final/reliability_pass_rate_by_language.csv",
+  "by_prompt_type_csv": "/Users/romankrutsko/PycharmProjects/masters-thesis/results/statistical_analysis/reliability_pass_rates_final/reliability_pass_rate_by_prompt_type.csv",
+  "by_model_prompt_type_csv": "/Users/romankrutsko/PycharmProjects/masters-thesis/results/statistical_analysis/reliability_pass_rates_final/reliability_pass_rate_by_model_prompt_type.csv"
+}

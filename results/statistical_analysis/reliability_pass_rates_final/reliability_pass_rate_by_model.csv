@@ -1,0 +1,5 @@
+model,Total,Passed,Failed,Pass rate,Pass rate (%),Mean reliability score,Mean reliability score (%),Mean score among passed
+Gemini,32,32,0,1.0000,100.00,0.7844,78.44,0.7844
+GPT,32,30,2,0.9375,93.75,0.7969,79.69,0.8500
+Llama,32,13,19,0.4062,40.62,0.2969,29.69,0.7308
+StarCoder,32,11,21,0.3438,34.38,0.2469,24.69,0.7182
