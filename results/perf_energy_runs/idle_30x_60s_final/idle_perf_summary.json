@@ -1,0 +1,38 @@
+{
+  "generated_at_utc": "2026-05-03T12:25:37.198670+00:00",
+  "started_at_utc": "2026-05-03T11:55:07.750274+00:00",
+  "runs_requested": 30,
+  "sleep_seconds": 60.0,
+  "pause_between_runs_seconds": 1.0,
+  "successful_runs": 30,
+  "failed_runs": 0,
+  "elapsed_seconds": {
+    "n": 30,
+    "mean": 60.00160252493333,
+    "variance": 2.780934056584238e-08,
+    "std": 0.00016676132814847207,
+    "min": 60.001024434,
+    "max": 60.001949779,
+    "cv": 2.7792812380165236e-06
+  },
+  "energy_joules": {
+    "n": 30,
+    "mean": 19.610333333333337,
+    "variance": 22.312506781609194,
+    "std": 4.723611624764381,
+    "min": 16.01,
+    "max": 37.36,
+    "cv": 0.2408736019155401
+  },
+  "avg_power_watts": {
+    "n": 30,
+    "mean": 0.326830158,
+    "variance": 0.0061975868034376096,
+    "std": 0.07872475343522906,
+    "min": 0.266826034,
+    "max": 0.62265063,
+    "cv": 0.24087358986996868
+  },
+  "output_csv": "/home/romakrut/PycharmProjects/masters-thesis/results/perf_energy_runs/idle_30x_60s_final/idle_perf_runs.csv",
+  "output_json": "/home/romakrut/PycharmProjects/masters-thesis/results/perf_energy_runs/idle_30x_60s_final/idle_perf_summary.json"
+}
