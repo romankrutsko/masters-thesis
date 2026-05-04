@@ -1,0 +1,53 @@
+{
+  "csv_files": [
+    "results/perf_energy_runs/translations_5x_nowarmup_cpu2_long/perf_energy_runs.csv"
+  ],
+  "stable_cv_threshold": 0.05,
+  "scripts": {
+    "script_109": {
+      "label": "starcoder/base/r/machine_learning_workflows/01_pipeline_cv_gridsearch_classification",
+      "runs": 5,
+      "metrics": {
+        "energy_joules": {
+          "n": 5,
+          "mean": 19865.852,
+          "variance": 428490.8556699992,
+          "std": 654.5921292453792,
+          "cv": 0.03295061944714876,
+          "cv_percent": 3.295061944714876,
+          "min": 19017.66,
+          "max": 20835.17,
+          "range": 1817.5099999999984,
+          "range_percent_of_mean": 9.148915435391336,
+          "stable": true
+        },
+        "elapsed_seconds": {
+          "n": 5,
+          "mean": 1166.7759446002,
+          "variance": 251.64511270324525,
+          "std": 15.863326029028253,
+          "cv": 0.01359586311531635,
+          "cv_percent": 1.359586311531635,
+          "min": 1147.640819858,
+          "max": 1187.655044305,
+          "range": 40.01422444700006,
+          "range_percent_of_mean": 3.4294694394570397,
+          "stable": true
+        },
+        "avg_power_watts": {
+          "n": 5,
+          "mean": 17.0285201776,
+          "variance": 0.36224898142654494,
+          "std": 0.6018712332605247,
+          "cv": 0.035344893565810276,
+          "cv_percent": 3.5344893565810276,
+          "min": 16.565449786,
+          "max": 18.015270369,
+          "range": 1.449820583000001,
+          "range_percent_of_mean": 8.51407267266332,
+          "stable": true
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "input_csv": "/Users/romankrutsko/PycharmProjects/masters-thesis/results/perf_energy_runs/original_30x_60_final/perf_energy_runs.csv",
+  "idle_runs_csv": "/Users/romankrutsko/PycharmProjects/masters-thesis/results/perf_energy_runs/idle_30x_60s_final/idle_perf_runs.csv",
+  "output_csv": "/Users/romankrutsko/PycharmProjects/masters-thesis/results/perf_energy_runs/idle_adjusted_30x_60s_final/original_perf_energy_runs_idle_adjusted.csv",
+  "rows_adjusted": 480,
+  "idle_avg_power_watts_mean": 0.326830158,
+  "adjustment": "energy_joules = max(0, energy_joules_raw - idle_avg_power_watts_mean * elapsed_seconds); avg_power_watts = energy_joules / elapsed_seconds"
+}
