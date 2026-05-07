@@ -199,7 +199,9 @@ def numeric_overlap(ref_vals: list[float], cand_vals: list[float], atol: float, 
             if used[i]:
                 continue
             dist = abs(rv - cv)
+            # atol handles small fixed differences, rtol handles differences relative to the magnitude of the baseline value.
             tol = atol + rtol * abs(rv)
+            # Keep the closest unused candidate value that is inside tolerance.
             if dist <= tol and dist < best_dist:
                 best_dist = dist
                 best_idx = i
@@ -238,6 +240,7 @@ def weighted_score(ref_profile: dict[str, Any], cand_profile: dict[str, Any], at
             active_weights[key] = w
 
     denom = sum(active_weights.values()) or 1.0
+    # Empty reference components are ignored, so divide by the remaining weight, total instead of the original full weight sum.
     score = sum(components[k] * active_weights[k] for k in active_weights) / denom
     return score, components, active_weights
 
@@ -313,7 +316,7 @@ def evaluate_execution(
             print(f"  -> candidate error: {row['error']}")
             continue
 
-        # This is a structural/numeric similarity score, not literal equivalence.
+        # structural/numeric similarity score
         ref_profile = extract_profile(ref_run.get("var_summary", {}), digits)
         cand_profile = extract_profile(cand_run.get("var_summary", {}), digits)
         score, components, _active = weighted_score(ref_profile, cand_profile, atol=atol, rtol=rtol)

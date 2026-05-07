@@ -126,7 +126,7 @@ def discover_slices(candidates: list[Candidate]) -> list[Slice]:
 
 
 def parse_csv_set(raw: str) -> set[str]:
-    # CLI filters accept comma-separated values such as "gpt,starcoder".
+    # comma-separated values.
     vals = [x.strip() for x in raw.split(",") if x.strip()]
     return set(vals)
 
@@ -137,7 +137,7 @@ def load_blacklist(path: Path) -> set[str]:
 
     entries: set[str] = set()
     for raw_line in path.read_text(encoding="utf-8").splitlines():
-        # Inline comments are allowed; only the path before "#" is considered.
+        # Inline comments are allowed.
         line = raw_line.split("#", 1)[0].strip()
         if line:
             entries.add(line)
