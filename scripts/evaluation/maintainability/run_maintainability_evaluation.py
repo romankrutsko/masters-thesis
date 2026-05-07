@@ -193,6 +193,8 @@ def finish_sonar_row(
         return row
 
     try:
+        # The scanner only submits analysis data. Poll the server until the
+        # Compute Engine task has either completed or failed.
         ce_task = poll_sonar_analysis(sonar_host_url, ce_task_id, sonar_token, timeout_sec=300)
     except (HTTPError, URLError, TimeoutError, OSError) as e:
         row["sonar_status"] = "api_error"
@@ -209,9 +211,11 @@ def finish_sonar_row(
     row["analysis_id"] = analysis_id
 
     try:
+        # Fetch quality-gate status for the completed analysis.
         qg = sonar_api_get(f"{sonar_host_url.rstrip('/')}/api/qualitygates/project_status", sonar_token, {"analysisId": analysis_id})
         row["quality_gate"] = qg.get("projectStatus", {}).get("status", "")
 
+        # Fetch the static-analysis metrics used in the result CSV/JSON.
         ms = sonar_api_get(
             f"{sonar_host_url.rstrip('/')}/api/measures/component",
             sonar_token,
@@ -238,6 +242,7 @@ def run_sonar_for_slice(
     sonar_project_prefix: str,
     rscript_bin: str,
 ) -> dict[str, Any]:
+    # Slice mode analyzes all files in one model/prompt/language directory as a single SonarQube project.
     slice_out = output_dir / "static" / sl.slug
     ensure_dir(slice_out)
 
@@ -267,6 +272,7 @@ def run_sonar_for_slice(
     ]
 
     if sl.language == "python":
+        # Python files are analyzed directly by SonarQube.
         properties.append("-Dsonar.inclusions=**/*.py")
     else:
         # Sonar is the reporting layer here, but R lint findings come from lintr.
@@ -287,6 +293,7 @@ def run_sonar_for_slice(
     proc = subprocess.run(cmd, cwd=str(sl.root), capture_output=True, text=True, check=False, env=env)
     scanner_log.write_text((proc.stdout or "") + "\n" + (proc.stderr or ""), encoding="utf-8")
 
+    # Convert the scanner result plus SonarQube API metrics into one output row.
     return finish_sonar_row(
         row,
         proc=proc,
@@ -344,8 +351,11 @@ def run_sonar_for_candidate(
     ]
 
     if candidate.language == "python":
+        # Python snippets can be scanned directly.
         properties.append(f"-Dsonar.inclusions={source_name}")
     else:
+        # R snippets are linted with lintr first; the generated external-issues
+        # report is imported by SonarQube during the scan.
         properties.append(f"-Dsonar.inclusions={source_name}")
         lintr_report = snippet_out / "lintr-sonar-external-issues.json"
         ok, msg = generate_lintr_external_issues(
@@ -365,9 +375,12 @@ def run_sonar_for_candidate(
     if sonar_token:
         env["SONAR_TOKEN"] = sonar_token
 
+    # Execute sonar-scanner in the candidate's directory so the single source
+    # file and generated .scannerwork metadata are scoped to that snippet.
     proc = subprocess.run(cmd, cwd=str(source_root), capture_output=True, text=True, check=False, env=env)
     scanner_log.write_text((proc.stdout or "") + "\n" + (proc.stderr or ""), encoding="utf-8")
 
+    # Convert the scanner result plus SonarQube API metrics into one output row.
     return finish_sonar_row(
         row,
         proc=proc,
@@ -410,6 +423,7 @@ def evaluate_static(
                 f"[maintainability {idx}/{total}] "
                 f"{target.model}/{target.prompt_type}/{target.language}/{target.category}/{target.snippet_id}"
             )
+            # one analysis per translated snippet
             row = run_sonar_for_candidate(
                 target,
                 output_dir=output_dir,
