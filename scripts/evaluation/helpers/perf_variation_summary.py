@@ -48,6 +48,7 @@ def read_ok_rows(paths: list[Path]) -> list[dict[str, str]]:
 
 
 def as_float(value: str) -> float | None:
+    # Invalid, missing, NaN, and infinite values are skipped
     try:
         out = float(value)
     except (TypeError, ValueError):
@@ -58,6 +59,9 @@ def as_float(value: str) -> float | None:
 
 
 def summarize(values: list[float], threshold: float) -> dict[str, float | int | bool | None]:
+    # Summarize one metric for one script across repeated runs.
+    # The coefficient of variation is the main stability indicator because it
+    # expresses standard deviation relative to the mean.
     n = len(values)
     if n == 0:
         return {
@@ -118,6 +122,7 @@ def main() -> int:
 
     by_script: dict[str, list[dict[str, str]]] = defaultdict(list)
     for row in rows:
+        # Variation is calculated separately for each measured script, not over the whole benchmark batch.
         by_script[row.get("script_id") or "unknown"].append(row)
 
     payload: dict[str, object] = {
@@ -145,6 +150,7 @@ def main() -> int:
             "metrics": {},
         }
         for metric in metrics:
+            # Extract the selected numeric metric across repeated runs, then calculate mean, spread
             values = [v for row in script_rows if (v := as_float(row.get(metric, ""))) is not None]
             stats = summarize(values, args.stable_cv_threshold)
             script_summary["metrics"][metric] = stats

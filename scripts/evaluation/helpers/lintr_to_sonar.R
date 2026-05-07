@@ -35,6 +35,7 @@ to_slice_rel <- function(path) {
   }
 }
 
+# Run lintr either on a single target file or on the full temporary slice.
 linters <- if (nzchar(target_file)) {
   lintr::lint(target_file)
 } else {
@@ -44,6 +45,7 @@ issues <- list()
 line_cache <- new.env(parent = emptyenv())
 
 for (i in seq_along(linters)) {
+  # Each lintr result is converted into one SonarQube external issue.
   lint <- linters[[i]]
   source_path <- resolve_issue_path(lint$filename)
   filename <- to_slice_rel(source_path)
@@ -62,6 +64,7 @@ for (i in seq_along(linters)) {
     line <- 1L
     text_range <- NULL
   } else {
+    # Clamp lintr's reported line/column to the actual file contents before creating the Sonar text range.
     line <- max(1L, min(line, line_count))
     line_text <- file_lines[[line]]
     line_width <- nchar(line_text, type = "chars", allowNA = FALSE, keepNA = FALSE)
@@ -83,6 +86,7 @@ for (i in seq_along(linters)) {
     }
   }
 
+  # SonarQube imports these as external CODE_SMELL findings because R is linted by lintr rather than by SonarQube's native language analyzers.
   issues[[length(issues) + 1]] <- list(
     engineId = "lintr",
     ruleId = as.character(lint$linter),
