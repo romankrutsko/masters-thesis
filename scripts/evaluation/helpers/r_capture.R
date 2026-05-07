@@ -111,12 +111,16 @@ setwd(repo_root)
 candidate_env <- new.env(parent = globalenv())
 captured <- capture.output(source(script_path, local = candidate_env))
 
-# Skip functions and summarize data/model objects left in the candidate env.
+# List candidate-created object names in stable order, then summarize the data/model objects left in the candidate env.
 objs <- sort(ls(envir = candidate_env))
+# Build one named summary entry per object created by the candidate script.
 out <- list()
 for (nm in objs) {
+  # Retrieve the object by name from the isolated candidate environment.
   val <- get(nm, envir = candidate_env)
+  # Functions are implementation details, not runtime outputs to compare.
   if (is.function(val)) next
+  # Store the compact JSON-safe summary under the original object name.
   out[[nm]] <- summarize_obj(val)
 }
 
