@@ -39,21 +39,21 @@ Component weights for the reliability score.
 
 The evaluator compares a translated script to the original by first reducing
 each execution to an object summary, then scoring overlap in these components:
-- kinds: object categories created by the script, e.g. table/vector/model.
-- shapes: row/column dimensions of table-like or matrix-like objects.
-- vectors: lengths of one-dimensional vector/series objects.
-- models: rough sizes of fitted model objects, e.g. number of params/coefs.
-- numeric: rounded numeric summaries such as means, sums, minima, maxima.
+- object_structures: object categories created by the script, e.g. table/vector/model.
+- table_matrix_dimensions: row/column dimensions of table-like or matrix-like objects.
+- vector_lengths: lengths of one-dimensional vector/series objects.
+- model_structure: rough sizes of fitted model objects, e.g. number of params/coefs.
+- numeric_summaries: rounded numeric summaries such as means, sums, minima, maxima.
 
 The final score is a weighted average over the components that exist in the
 original/reference execution. Empty reference components are ignored.
 """
 BASE_WEIGHTS = {
-    "kinds": 0.25,
-    "shapes": 0.25,
-    "vectors": 0.15,
-    "models": 0.20,
-    "numeric": 0.15,
+    "object_structures": 0.25,
+    "table_matrix_dimensions": 0.25,
+    "vector_lengths": 0.15,
+    "model_structure": 0.20,
+    "numeric_summaries": 0.15,
 }
 
 
@@ -81,10 +81,10 @@ def collect_numeric_values(x: object, out: list[float]) -> None:
         out.append(fx)
 
 
-def summarize_kind(item: dict) -> tuple[str, tuple[int, int] | tuple[int] | None]:
+def summarize_object_structure(item: dict) -> tuple[str, tuple[int, int] | tuple[int] | None]:
     """Map raw Python/R object summaries into comparable categories.
 
-    Returns a broad kind plus optional dimensions:
+    Returns a broad object structure plus optional dimensions:
     - ("table", (rows, cols)) for DataFrame/data.frame summaries
     - ("matrix", (rows, cols)) for ndarray/matrix summaries
     - ("vector", (length,)) for Series/R vector-like summaries
@@ -124,52 +124,52 @@ def summarize_kind(item: dict) -> tuple[str, tuple[int, int] | tuple[int] | None
 
 def extract_profile(var_summary: dict, digits: int) -> dict[str, Any]:
     """Convert a full execution summary into the five scoring components."""
-    kinds = Counter()
-    shapes = Counter()
+    object_structures = Counter()
+    table_matrix_dimensions = Counter()
     vector_lengths = Counter()
-    model_sizes = Counter()
-    numeric_values: list[float] = []
+    model_structure = Counter()
+    numeric_summaries: list[float] = []
 
     # Reduce a full execution snapshot into a small structural fingerprint.
     for obj in var_summary.values():
         if not isinstance(obj, dict):
             continue
 
-        kind, shape = summarize_kind(obj)
-        kinds[kind] += 1
+        object_structure, dimensions = summarize_object_structure(obj)
+        object_structures[object_structure] += 1
 
-        if kind in {"table", "matrix"} and shape is not None and len(shape) == 2:
-            shapes[(int(shape[0]), int(shape[1]))] += 1
-        if kind == "vector" and shape is not None and len(shape) == 1:
-            vector_lengths[(int(shape[0]),)] += 1
+        if object_structure in {"table", "matrix"} and dimensions is not None and len(dimensions) == 2:
+            table_matrix_dimensions[(int(dimensions[0]), int(dimensions[1]))] += 1
+        if object_structure == "vector" and dimensions is not None and len(dimensions) == 1:
+            vector_lengths[(int(dimensions[0]),)] += 1
 
         # Model-size counts are intentionally coarse. They check whether a
         # candidate produced model objects of comparable complexity, not whether
         # every model parameter is exactly equal.
         if "params" in obj and isinstance(obj["params"], list):
-            model_sizes[len(obj["params"])] += 1
+            model_structure[len(obj["params"])] += 1
         if "coef" in obj:
             if isinstance(obj["coef"], list):
-                model_sizes[len(obj["coef"])] += 1
+                model_structure[len(obj["coef"])] += 1
             elif isinstance(obj["coef"], dict):
-                model_sizes[len(obj["coef"].keys())] += 1
+                model_structure[len(obj["coef"].keys())] += 1
         if "model" in obj and isinstance(obj["model"], dict):
-            model_sizes[len(obj["model"].keys())] += 1
+            model_structure[len(obj["model"].keys())] += 1
 
         for k in ("mean", "std", "sd", "sum", "min", "max", "numeric_means", "numeric_sds", "top_rel_inf"):
             if k in obj:
-                collect_numeric_values(obj[k], numeric_values)
+                collect_numeric_values(obj[k], numeric_summaries)
 
-    rounded = sorted(round(v, digits) for v in numeric_values)
+    rounded = sorted(round(v, digits) for v in numeric_summaries)
     if len(rounded) > 200:
         rounded = rounded[:200]
 
     return {
-        "kinds": kinds,
-        "shapes": shapes,
+        "object_structures": object_structures,
+        "table_matrix_dimensions": table_matrix_dimensions,
         "vector_lengths": vector_lengths,
-        "model_sizes": model_sizes,
-        "numeric_values": rounded,
+        "model_structure": model_structure,
+        "numeric_summaries": rounded,
     }
 
 
@@ -215,27 +215,27 @@ def numeric_overlap(ref_vals: list[float], cand_vals: list[float], atol: float, 
 def weighted_score(ref_profile: dict[str, Any], cand_profile: dict[str, Any], atol: float, rtol: float) -> tuple[float, dict[str, float], dict[str, float]]:
     """Return final reliability score and per-component scores."""
     components = {
-        "kinds": counter_overlap(ref_profile["kinds"], cand_profile["kinds"]),
-        "shapes": counter_overlap(ref_profile["shapes"], cand_profile["shapes"]),
-        "vectors": counter_overlap(ref_profile["vector_lengths"], cand_profile["vector_lengths"]),
-        "models": counter_overlap(ref_profile["model_sizes"], cand_profile["model_sizes"]),
-        "numeric": numeric_overlap(ref_profile["numeric_values"], cand_profile["numeric_values"], atol=atol, rtol=rtol),
+        "object_structures": counter_overlap(ref_profile["object_structures"], cand_profile["object_structures"]),
+        "table_matrix_dimensions": counter_overlap(ref_profile["table_matrix_dimensions"], cand_profile["table_matrix_dimensions"]),
+        "vector_lengths": counter_overlap(ref_profile["vector_lengths"], cand_profile["vector_lengths"]),
+        "model_structure": counter_overlap(ref_profile["model_structure"], cand_profile["model_structure"]),
+        "numeric_summaries": numeric_overlap(ref_profile["numeric_summaries"], cand_profile["numeric_summaries"], atol=atol, rtol=rtol),
     }
 
     # Ignore empty reference components so we do not reward/penalize noise.
     active_weights: dict[str, float] = {}
     for key, w in BASE_WEIGHTS.items():
         ref_component_empty = False
-        if key == "kinds":
-            ref_component_empty = sum(ref_profile["kinds"].values()) == 0
-        elif key == "shapes":
-            ref_component_empty = sum(ref_profile["shapes"].values()) == 0
-        elif key == "vectors":
+        if key == "object_structures":
+            ref_component_empty = sum(ref_profile["object_structures"].values()) == 0
+        elif key == "table_matrix_dimensions":
+            ref_component_empty = sum(ref_profile["table_matrix_dimensions"].values()) == 0
+        elif key == "vector_lengths":
             ref_component_empty = sum(ref_profile["vector_lengths"].values()) == 0
-        elif key == "models":
-            ref_component_empty = sum(ref_profile["model_sizes"].values()) == 0
-        elif key == "numeric":
-            ref_component_empty = len(ref_profile["numeric_values"]) == 0
+        elif key == "model_structure":
+            ref_component_empty = sum(ref_profile["model_structure"].values()) == 0
+        elif key == "numeric_summaries":
+            ref_component_empty = len(ref_profile["numeric_summaries"]) == 0
         if not ref_component_empty:
             active_weights[key] = w
 
@@ -283,11 +283,11 @@ def evaluate_execution(
             "reference_path": to_rel(ref_path),
             "status": "ok",
             "score": 0.0,
-            "kinds": 0.0,
-            "shapes": 0.0,
-            "vectors": 0.0,
-            "models": 0.0,
-            "numeric": 0.0,
+            "object_structures": 0.0,
+            "table_matrix_dimensions": 0.0,
+            "vector_lengths": 0.0,
+            "model_structure": 0.0,
+            "numeric_summaries": 0.0,
             "error": "",
         }
 
@@ -316,17 +316,17 @@ def evaluate_execution(
             print(f"  -> candidate error: {row['error']}")
             continue
 
-        # structural/numeric similarity score
+        # Runtime-output similarity score.
         ref_profile = extract_profile(ref_run.get("var_summary", {}), digits)
         cand_profile = extract_profile(cand_run.get("var_summary", {}), digits)
         score, components, _active = weighted_score(ref_profile, cand_profile, atol=atol, rtol=rtol)
 
         row["score"] = round(score, score_decimals)
-        row["kinds"] = round(components["kinds"], score_decimals)
-        row["shapes"] = round(components["shapes"], score_decimals)
-        row["vectors"] = round(components["vectors"], score_decimals)
-        row["models"] = round(components["models"], score_decimals)
-        row["numeric"] = round(components["numeric"], score_decimals)
+        row["object_structures"] = round(components["object_structures"], score_decimals)
+        row["table_matrix_dimensions"] = round(components["table_matrix_dimensions"], score_decimals)
+        row["vector_lengths"] = round(components["vector_lengths"], score_decimals)
+        row["model_structure"] = round(components["model_structure"], score_decimals)
+        row["numeric_summaries"] = round(components["numeric_summaries"], score_decimals)
 
         rows.append(row)
         per_slice_scores[(c.model, c.prompt_type, c.language)].append(row["score"])
@@ -345,11 +345,11 @@ def evaluate_execution(
         "reference_path",
         "status",
         "score",
-        "kinds",
-        "shapes",
-        "vectors",
-        "models",
-        "numeric",
+        "object_structures",
+        "table_matrix_dimensions",
+        "vector_lengths",
+        "model_structure",
+        "numeric_summaries",
         "error",
     ]
 

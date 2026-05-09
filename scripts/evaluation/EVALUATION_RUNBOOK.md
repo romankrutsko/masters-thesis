@@ -60,25 +60,25 @@ compares those summaries.
 
 The `execution_scores.csv` component columns mean:
 
-- `kinds`: overlap in broad object categories, such as table, vector, matrix,
-  model, scalar, or other.
-- `shapes`: overlap in table/matrix dimensions, such as number of rows and
-  columns.
-- `vectors`: overlap in lengths of one-dimensional objects, such as pandas
-  Series or R vectors.
-- `models`: overlap in rough model complexity, such as number of fitted
-  parameters, coefficients, or model fields.
-- `numeric`: overlap in rounded numeric summaries, such as means, standard
-  deviations, sums, minima, maxima, or model-related numeric values.
+- `object_structures`: overlap in broad object categories, such as table,
+  vector, matrix, model, scalar, or other.
+- `table_matrix_dimensions`: overlap in table/matrix dimensions, such as
+  number of rows and columns.
+- `vector_lengths`: overlap in lengths of one-dimensional objects, such as
+  pandas Series or R vectors.
+- `model_structure`: overlap in rough model complexity, such as number of
+  fitted parameters, coefficients, or model fields.
+- `numeric_summaries`: overlap in rounded numeric summaries, such as means,
+  standard deviations, sums, minima, maxima, or model-related numeric values.
 
 The final `score` is a weighted average of these components:
 
 ```text
-kinds   0.25
-shapes  0.25
-vectors 0.15
-models  0.20
-numeric 0.15
+object_structures       0.25
+table_matrix_dimensions 0.25
+vector_lengths          0.15
+model_structure         0.20
+numeric_summaries       0.15
 ```
 
 If the original/reference script has no data for a component, that component is

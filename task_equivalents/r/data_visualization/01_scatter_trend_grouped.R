@@ -15,3 +15,12 @@ yfit = a + b * X[,2]
 
 plot(X[,2], Y, xlab='horsepower', ylab='mpg')
 lines(X[,2], yfit, col='red')
+
+# Previous version
+#
+# auto = read.csv('data/csv/Auto.csv', header=TRUE, na.strings='?')
+# auto = na.omit(auto)
+# model1 = lm(mpg~horsepower, data=auto)
+#
+# plot(auto$horsepower, auto$mpg)
+# abline(model1, lwd=3, col='red')

@@ -18,3 +18,20 @@ xtrain = X[train,]
 xtest  = X[test,]
 ytrain = Y[train]
 ytest  = Y[test]
+
+# Previous version
+#
+# College = read.csv('data/csv/College.csv', header=TRUE)
+# rownames(College) = College[,1]
+# College = College[,-1]
+#
+# set.seed(1)
+# train    = sample(1:nrow(College), nrow(College)/2)
+# test     = (-train)
+# df.train = College[train,]
+# df.test  = College[test,]
+#
+# x.train = model.matrix(Apps~., df.train)[,-1]
+# y.train = df.train$Apps
+# x.test  = model.matrix(Apps~., df.test)[,-1]
+# y.test  = df.test$Apps
