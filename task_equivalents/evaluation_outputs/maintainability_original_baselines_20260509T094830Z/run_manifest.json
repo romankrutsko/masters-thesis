@@ -1,0 +1,28 @@
+{
+  "generated_at_utc": "2026-05-09T09:48:30.252489+00:00",
+  "repo_root": "/Users/romankrutsko/PycharmProjects/masters-thesis",
+  "llm_root": "/Users/romankrutsko/PycharmProjects/masters-thesis/task_equivalents/llm_translations",
+  "candidate_count": 16,
+  "blacklist_count": 0,
+  "blacklisted_candidates": [],
+  "args": {
+    "mode": "static",
+    "python_bin": "",
+    "rscript_bin": "Rscript",
+    "digits": null,
+    "atol": null,
+    "rtol": null,
+    "score_decimals": null,
+    "execution_timeout": null,
+    "sonar_scanner_bin": "sonar-scanner",
+    "sonar_host_url": "http://localhost:9000",
+    "sonar_project_prefix": "masters_thesis_translations",
+    "granularity": "snippet",
+    "output_dir": "/Users/romankrutsko/PycharmProjects/masters-thesis/task_equivalents/evaluation_outputs/maintainability_original_baselines_20260509T094830Z",
+    "models": "",
+    "prompt_types": "",
+    "languages": "python,r",
+    "blacklist_file": "/Users/romankrutsko/PycharmProjects/masters-thesis/scripts/evaluation/helpers/evaluation_blacklist.txt",
+    "source": "original"
+  }
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run Sonar-based maintainability checks for translated snippets only."""
+"""Run Sonar-based maintainability checks for translated or original snippets."""
 
 from __future__ import annotations
 
@@ -29,19 +29,71 @@ from scripts.evaluation.helpers.evaluation_common import (
     Candidate,
     DEFAULT_BLACKLIST_FILE,
     DEFAULT_OUTPUT_ROOT,
-    REPO_ROOT,
     LLM_ROOT,
+    REF_ROOTS,
+    REPO_ROOT,
     Slice,
     discover_candidates,
     discover_slices,
     ensure_dir,
     filter_candidates,
     now_stamp,
+    parse_csv_set,
     to_rel,
     write_run_manifest,
 )
 
 LINTR_TO_SONAR_HELPER = EVALUATION_DIR / "helpers" / "lintr_to_sonar.R"
+BASELINE_TASKS = [
+    ("python", "data_manipulation_preprocessing", "01_impute_encode_scale", "py"),
+    ("python", "data_manipulation_preprocessing", "02_merge_aggregate_reshape", "py"),
+    ("python", "data_visualization", "01_scatter_trend_grouped", "py"),
+    ("python", "data_visualization", "02_distribution_boxplot", "py"),
+    ("python", "machine_learning_workflows", "01_pipeline_cv_gridsearch_classification", "py"),
+    ("python", "machine_learning_workflows", "02_regression_workflow_feature_importance", "py"),
+    ("python", "statistical_modelling_analysis", "01_linear_regression_inference", "py"),
+    ("python", "statistical_modelling_analysis", "02_logistic_regression_odds_ratios", "py"),
+    ("r", "data_manipulation_preprocessing", "01_impute_encode_scale", "R"),
+    ("r", "data_manipulation_preprocessing", "02_merge_aggregate_reshape", "R"),
+    ("r", "data_visualization", "01_scatter_trend_grouped", "R"),
+    ("r", "data_visualization", "02_distribution_boxplot", "R"),
+    ("r", "machine_learning_workflows", "01_pipeline_cv_gridsearch_classification", "R"),
+    ("r", "machine_learning_workflows", "02_regression_workflow_feature_importance", "R"),
+    ("r", "statistical_modelling_analysis", "01_linear_regression_inference", "R"),
+    ("r", "statistical_modelling_analysis", "02_logistic_regression_odds_ratios", "R"),
+]
+
+
+def discover_original_candidates(languages: str) -> list[Candidate]:
+    allowed_languages = parse_csv_set(languages) if languages.strip() else set(REF_ROOTS)
+    candidates: list[Candidate] = []
+    for index, (language, category, snippet_id, extension) in enumerate(BASELINE_TASKS, start=1):
+        if language not in allowed_languages:
+            continue
+        path = REF_ROOTS[language] / category / f"{snippet_id}.{extension}"
+        if not path.exists():
+            continue
+        candidates.append(
+            Candidate(
+                script_id=f"base_{index}",
+                path=path,
+                rel_path=path.relative_to(REPO_ROOT),
+                model="original",
+                prompt_type="base",
+                language=language,
+                category=category,
+                snippet_id=snippet_id,
+            )
+        )
+    return candidates
+
+
+def discover_original_slices(candidates: list[Candidate]) -> list[Slice]:
+    languages = sorted({candidate.language for candidate in candidates})
+    return [
+        Slice(model="original", prompt_type="base", language=language, root=REF_ROOTS[language])
+        for language in languages
+    ]
 
 
 def sanitize_key(s: str) -> str:
@@ -485,7 +537,13 @@ def evaluate_static(
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Run Sonar-based maintainability checks for llm_translations.")
+    parser = argparse.ArgumentParser(description="Run Sonar-based maintainability checks.")
+    parser.add_argument(
+        "--source",
+        choices=("translations", "original"),
+        default="translations",
+        help="Analyze translated snippets or original baseline snippets.",
+    )
     parser.add_argument("--rscript-bin", default="Rscript")
     parser.add_argument("--sonar-scanner-bin", default="sonar-scanner")
     parser.add_argument("--sonar-host-url", default=os.environ.get("SONAR_HOST_URL", "http://localhost:9000"))
@@ -507,16 +565,24 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def run(args: argparse.Namespace) -> int:
-    candidates = discover_candidates(LLM_ROOT)
-    candidates, blacklist_entries, blacklisted_candidates = filter_candidates(
-        candidates,
-        models=args.models,
-        prompt_types=args.prompt_types,
-        languages=args.languages,
-        blacklist_file=args.blacklist_file,
-    )
+    if args.source == "original":
+        candidates = discover_original_candidates(args.languages)
+        blacklist_entries: set[str] = set()
+        blacklisted_candidates: list[str] = []
+        if args.models.strip() or args.prompt_types.strip():
+            print("--models and --prompt-types are ignored when --source original is used")
+    else:
+        candidates = discover_candidates(LLM_ROOT)
+        candidates, blacklist_entries, blacklisted_candidates = filter_candidates(
+            candidates,
+            models=args.models,
+            prompt_types=args.prompt_types,
+            languages=args.languages,
+            blacklist_file=args.blacklist_file,
+        )
     if not candidates:
-        print(f"No candidate files found under: {LLM_ROOT}")
+        root = "original baseline roots" if args.source == "original" else str(LLM_ROOT)
+        print(f"No candidate files found under: {root}")
         return 2
 
     run_id = args.run_id.strip() or now_stamp()
@@ -531,7 +597,10 @@ def run(args: argparse.Namespace) -> int:
         print(f"Blacklist file: {args.blacklist_file}")
         print(f"Candidates excluded by blacklist: {len(blacklisted_candidates)}")
 
-    targets = discover_slices(candidates) if args.granularity == "slice" else candidates
+    if args.granularity == "slice":
+        targets = discover_original_slices(candidates) if args.source == "original" else discover_slices(candidates)
+    else:
+        targets = candidates
     result = evaluate_static(
         targets,
         output_dir=output_dir,

@@ -221,6 +221,7 @@ def write_run_manifest(
             "prompt_types": getattr(args, "prompt_types", ""),
             "languages": getattr(args, "languages", ""),
             "blacklist_file": str(getattr(args, "blacklist_file", "")),
+            "source": getattr(args, "source", ""),
         },
     }
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
