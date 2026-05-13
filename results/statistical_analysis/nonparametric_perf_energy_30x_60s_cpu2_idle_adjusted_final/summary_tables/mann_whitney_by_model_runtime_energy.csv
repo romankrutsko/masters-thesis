@@ -1,0 +1,9 @@
+model,metric,tested_snippets,significant_snippets,significant_share_pct,significant_lower,significant_higher,not_significant,mean_pct_diff_vs_original,median_pct_diff_vs_original
+Gemini 3.1 Pro,Runtime,32,31,96.88,27,4,1,-13.779,-12.044
+Gemini 3.1 Pro,Energy,32,25,78.12,22,3,7,-12.754,-4.055
+GPT-5.4,Runtime,30,30,100.0,14,16,0,255.232,0.466
+GPT-5.4,Energy,30,30,100.0,14,16,0,273.311,1.162
+Llama 4 Maverick Instruct,Runtime,13,10,76.92,8,2,3,39.376,-9.34
+Llama 4 Maverick Instruct,Energy,13,11,84.62,9,2,2,47.198,-9.318
+StarCoder2-15B Instruct,Runtime,10,10,100.0,7,3,0,236.803,-5.132
+StarCoder2-15B Instruct,Energy,10,9,90.0,6,3,1,285.887,-5.283
